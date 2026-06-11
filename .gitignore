@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+.pnp
+.pnp.js
+
+# Build outputs
+frontend/dist/
+*.egg-info/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+*.orig
+
+# Docker
+postgres_data/
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Playwright
+.playwright-mcp/
+
+# Misc
+*.tgz
+.cache/

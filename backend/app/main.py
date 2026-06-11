@@ -1,0 +1,123 @@
+"""FastAPI application entry point."""
+
+import logging
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from app.core.config import settings
+from app.core.database import create_tables
+from app.middleware.error_handler import ErrorHandlerMiddleware
+from app.middleware.rate_limiter import RateLimitMiddleware
+from app.routers import (
+    achievements,
+    admin,
+    ai_chat,
+    appointments,
+    auth,
+    availability,
+    categories,
+    chat,
+    coupons,
+    favorites,
+    invoices,
+    loyalty,
+    mcp_tools,
+    notifications,
+    payments,
+    providers,
+    reminders,
+    reviews,
+    users,
+    waitlist,
+)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO if not settings.DEBUG else logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
+# Create FastAPI app
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="A comprehensive appointment scheduling platform API",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+uploads_dir = Path(__file__).resolve().parent.parent / "uploads"
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
+# Add middleware
+app.add_middleware(ErrorHandlerMiddleware)
+app.add_middleware(RateLimitMiddleware)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(providers.router)
+app.include_router(availability.router)
+app.include_router(appointments.router)
+app.include_router(categories.router)
+app.include_router(notifications.router)
+app.include_router(reviews.router)
+app.include_router(favorites.router)
+app.include_router(admin.router)
+app.include_router(waitlist.router)
+app.include_router(loyalty.router)
+app.include_router(mcp_tools.router)
+app.include_router(invoices.router)
+app.include_router(chat.router)
+app.include_router(coupons.router)
+app.include_router(achievements.router)
+app.include_router(ai_chat.router)
+app.include_router(payments.router)
+app.include_router(reminders.router)
+
+
+lifespan_started = False
+
+
+async def _startup():
+    """Initialize database tables and Redis on startup."""
+    logger.info("Starting up Appointment Scheduling Platform...")
+    await create_tables()
+    from app.core.redis import get_redis
+    await get_redis()
+    logger.info("Database tables created/verified.")
+
+
+@app.on_event("startup")
+async def startup_event():
+    await _startup()
+
+
+@app.get("/", tags=["Health"])
+async def root():
+    """Root endpoint - health check."""
+    return {
+        "name": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "status": "healthy",
+    }
+
+
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "ok"}

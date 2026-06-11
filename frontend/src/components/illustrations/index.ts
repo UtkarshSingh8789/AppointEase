@@ -1,0 +1,9 @@
+export { CalendarIllustration } from './CalendarIllustration';
+export { DoctorIllustration } from './DoctorIllustration';
+export { BookingIllustration } from './BookingIllustration';
+export { EmptyCalendarIllustration } from './EmptyCalendarIllustration';
+export { SuccessIllustration } from './SuccessIllustration';
+export { SearchIllustration } from './SearchIllustration';
+export { NotificationIllustration } from './NotificationIllustration';
+export { TeamIllustration } from './TeamIllustration';
+export { HeartIllustration } from './HeartIllustration';

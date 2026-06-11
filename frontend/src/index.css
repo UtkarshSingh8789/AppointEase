@@ -1,0 +1,305 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   AppointEase — Professional monochrome design system
+   Straight edges, high-contrast, accessible in light & dark.
+   ============================================================ */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-white text-neutral-900 font-sans antialiased;
+  }
+
+  .dark body {
+    @apply bg-neutral-950 text-neutral-100;
+  }
+
+  /* Straight edges across the platform (brutalist/editorial aesthetic) */
+  *,
+  *::before,
+  *::after {
+    border-radius: 0 !important;
+  }
+
+  /* Grayscale imagery for a cohesive monochrome look — exempt logo SVGs and charts */
+  img {
+    filter: grayscale(1);
+  }
+  svg:not([data-logo]):not(.recharts-surface) {
+    filter: grayscale(1);
+  }
+  /* Keep charts colorful */
+  .recharts-wrapper,
+  .recharts-wrapper svg,
+  .recharts-surface {
+    filter: none !important;
+  }
+
+  *:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-black text-white px-4 py-2 font-medium border border-black
+           hover:bg-white hover:text-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2
+           transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-black px-4 py-2 font-medium border border-black
+           hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2
+           transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 border border-black text-sm bg-white text-black
+           focus:outline-none focus:ring-2 focus:ring-black focus:border-black
+           placeholder:text-gray-500 transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-white border border-black shadow-none;
+  }
+}
+
+/* ============================================================
+   DARK MODE — surfaces, borders, and TEXT VISIBILITY
+   The goal: every piece of text is clearly legible on dark
+   surfaces. We map common Tailwind utility colors to readable
+   equivalents instead of forcing everything to pure black.
+   ============================================================ */
+@layer utilities {
+  /* --- Surfaces: light backgrounds become layered dark grays --- */
+  /* Let Tailwind dark: variants handle backgrounds naturally.
+     Only override gray utility backgrounds that don't have explicit dark: variants. */
+  .dark .bg-gray-50 { background-color: #0f0f0f !important; }
+  .dark .bg-gray-100 { background-color: #161616 !important; }
+  .dark .bg-gray-200 { background-color: #1f1f1f !important; }
+  .dark .bg-gray-700 { background-color: #1a1a1a !important; }
+  .dark .bg-gray-800 { background-color: #0f0f0f !important; }
+  .dark .bg-gray-900 { background-color: #0a0a0a !important; }
+  .dark .bg-gray-950 { background-color: #050505 !important; }
+
+  /* --- Text on dark: ensure strong contrast --- */
+  /* Headings / primary text → near-white */
+  .dark .text-gray-900,
+  .dark .text-gray-800 {
+    color: #f5f5f5 !important;
+  }
+  /* NOTE: .dark .text-black is NOT overridden here because some sections
+     intentionally use dark:text-black on light backgrounds (inverted sections).
+     Those sections use dark:bg-neutral-100 dark:text-black which must stay black. */
+  /* Body text → light gray */
+  .dark .text-gray-700,
+  .dark .text-gray-600 {
+    color: #d4d4d4 !important;
+  }
+  /* Secondary / muted text → medium gray (still readable) */
+  .dark .text-gray-500,
+  .dark .text-gray-400 {
+    color: #a3a3a3 !important;
+  }
+
+  /* Accent/brand text utilities → white in dark mode for legibility */
+  .dark .text-primary-300,
+  .dark .text-primary-400,
+  .dark .text-primary-500,
+  .dark .text-primary-600,
+  .dark .text-primary-700 {
+    color: #f5f5f5 !important;
+  }
+
+  /* Status text colors stay tinted but brightened for dark bg */
+  .dark .text-red-400,
+  .dark .text-red-500,
+  .dark .text-red-600,
+  .dark .text-red-700 { color: #f87171 !important; }
+  .dark .text-green-400,
+  .dark .text-green-500,
+  .dark .text-green-600,
+  .dark .text-green-700 { color: #4ade80 !important; }
+  .dark .text-blue-400,
+  .dark .text-blue-500,
+  .dark .text-blue-600,
+  .dark .text-blue-700 { color: #60a5fa !important; }
+  .dark .text-amber-400,
+  .dark .text-amber-500,
+  .dark .text-amber-600,
+  .dark .text-amber-700 { color: #fbbf24 !important; }
+  .dark .text-yellow-400,
+  .dark .text-yellow-500 { color: #facc15 !important; }
+  .dark .text-violet-400,
+  .dark .text-violet-500,
+  .dark .text-violet-600 { color: #a78bfa !important; }
+
+  /* Placeholders */
+  .dark .placeholder\:text-gray-400::placeholder,
+  .dark .placeholder\:text-gray-500::placeholder,
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: rgba(255, 255, 255, 0.55) !important;
+  }
+
+  /* Borders → subtle light dividers */
+  .dark .border-gray-100,
+  .dark .border-gray-200,
+  .dark .border-gray-300 {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+  .dark .border-gray-600,
+  .dark .border-gray-700,
+  .dark .border-gray-800 {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  /* Form fields in dark */
+  .dark input,
+  .dark textarea,
+  .dark select {
+    background-color: #0f0f0f !important;
+    color: #f5f5f5 !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  /* --- Native select option lists (fix unreadable selected option) --- */
+  select option {
+    background-color: #ffffff;
+    color: #171717;
+  }
+  .dark select option {
+    background-color: #0f0f0f;
+    color: #f5f5f5;
+  }
+  select option:checked,
+  select option:hover {
+    background-color: #171717;
+    color: #ffffff;
+  }
+  .dark select option:checked,
+  .dark select option:hover {
+    background-color: #f5f5f5;
+    color: #0a0a0a;
+  }
+
+  /* --- Brand-tinted TEXT first (so dark-surface rule below can override) --- */
+  [class*='text-primary'] {
+    color: #171717 !important;
+  }
+  .dark [class*='text-primary'] {
+    color: #f5f5f5 !important;
+  }
+
+  /* --- Monochrome enforcement: dark accent SURFACES --- */
+  /* Strong primary backgrounds → black surface. Force the element AND all
+     of its descendants to white text so nested brand-colored text
+     (e.g. text-primary-700 on a selected pill) never goes black-on-black. */
+  [class*='bg-primary-6'],
+  [class*='bg-primary-7'],
+  [class*='bg-primary-8'],
+  [class*='bg-primary-9'] {
+    background-color: #000 !important;
+    color: #fff !important;
+  }
+  [class*='bg-primary-6'] *,
+  [class*='bg-primary-7'] *,
+  [class*='bg-primary-8'] *,
+  [class*='bg-primary-9'] * {
+    color: #fff !important;
+  }
+  /* Black utility surfaces: ensure descendant text is white in LIGHT mode only.
+     Exclude links and buttons so they can have their own colors (e.g. inverted CTAs). */
+  :root:not(.dark) .bg-black {
+    color: #fff !important;
+  }
+  :root:not(.dark) .bg-black *:not(svg):not(path):not(a):not(button) {
+    color: #fff !important;
+  }
+
+  /* Gradients → flat black for the editorial monochrome look */
+  [class*='bg-gradient'],
+  [class*='from-primary'],
+  [class*='to-violet'],
+  [class*='to-purple'],
+  [class*='to-cyan'],
+  [class*='to-rose'],
+  [class*='to-orange'],
+  [class*='to-emerald'] {
+    background-image: none !important;
+  }
+
+  /* Gradient text clip → solid */
+  .bg-clip-text.text-transparent {
+    color: #000 !important;
+    -webkit-text-fill-color: #000 !important;
+  }
+  .dark .bg-clip-text.text-transparent {
+    color: #f5f5f5 !important;
+    -webkit-text-fill-color: #f5f5f5 !important;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Inverted sections: dark-mode sections with light backgrounds need dark text.
+     Apply .inverted to any section that uses dark:bg-neutral-100 or similar light bg in dark mode.
+     This overrides the global dark-mode text color forcing. */
+  .dark .inverted,
+  .dark .inverted *:not(a):not(button) {
+    color: #0a0a0a !important;
+  }
+  .dark .inverted .muted {
+    color: #525252 !important;
+  }
+
+  /* Light-mode inverted sections (bg-black with white text) — only in light mode */
+  :root:not(.dark) .light-inverted,
+  :root:not(.dark) .light-inverted *:not(a):not(button) {
+    color: #ffffff !important;
+  }
+  :root:not(.dark) .light-inverted .muted {
+    color: #a3a3a3 !important;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #404040;
+}
