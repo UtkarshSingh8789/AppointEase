@@ -1,24 +1,4 @@
 services:
-  # PostgreSQL Database
-  db:
-    image: postgres:15-alpine
-    container_name: appointment_db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: appointment_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
-
   # Redis (Caching, Rate Limiting, Sessions)
   redis:
     image: redis:7-alpine
@@ -43,7 +23,7 @@ services:
       dockerfile: Dockerfile
     container_name: appointment_backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@db:5432/appointment_db
+      DATABASE_URL: ${DATABASE_URL}
       SECRET_KEY: ${SECRET_KEY}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
@@ -77,8 +57,6 @@ services:
       - backend_data:/app/data
       - backend_uploads:/app/uploads
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -99,7 +77,7 @@ services:
     container_name: appointment_mcp
     command: ["python", "-m", "app.mcp_server"]
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@db:5432/appointment_db
+      DATABASE_URL: ${DATABASE_URL}
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: "false"
       MCP_HOST: 0.0.0.0
@@ -111,9 +89,6 @@ services:
     volumes:
       - backend_data:/app/data
       - backend_uploads:/app/uploads
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped
@@ -148,7 +123,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
   redis_data:
   backend_data:
   backend_uploads:
