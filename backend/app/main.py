@@ -122,3 +122,17 @@ async def health_check():
     """Health check endpoint."""
     return {"status": "ok"}
 
+@app.post("/api/seed", tags=["Admin"])
+async def run_seed(secret: str):
+    """One-time seed endpoint. Requires SEED_SECRET env var to match."""
+    import os
+    seed_secret = os.environ.get("SEED_SECRET", "")
+    if not seed_secret or secret != seed_secret:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        from seed import seed_database
+        await seed_database()
+        return {"status": "seeded"}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
