@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,6 +32,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export const RegisterPage: React.FC = () => {
   const { register: registerUser, isLoading } = useAuthStore();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -53,10 +54,7 @@ export const RegisterPage: React.FC = () => {
         provider: '/provider/onboarding',
         admin: '/admin/dashboard',
       };
-      // Force full page navigation — replace + reload fallback
-      const target = dashboardPaths[registeredUser.role];
-      window.location.href = target;
-      setTimeout(() => { window.location.reload(); }, 100);
+      navigate(dashboardPaths[registeredUser.role], { replace: true });
     } catch {
       // Error handled in store
     }

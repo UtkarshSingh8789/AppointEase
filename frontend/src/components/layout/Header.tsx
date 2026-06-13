@@ -71,8 +71,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/login';
-    setTimeout(() => { window.location.reload(); }, 100);
+    navigate('/login', { replace: true });
   };
 
   return (

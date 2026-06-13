@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,6 +22,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export const LoginPage: React.FC = () => {
   const { login, isLoading } = useAuthStore();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [shakeForm, setShakeForm] = useState(false);
@@ -63,13 +64,8 @@ export const LoginPage: React.FC = () => {
         provider: '/provider/dashboard',
         admin: '/admin/dashboard',
       };
-      // Force full page navigation — replace + reload fallback
-      const target = dashboardPaths[loggedInUser.role];
-      window.location.href = target;
-      // Fallback: if href assignment doesn't trigger navigation (same-origin SPA), force reload
-      setTimeout(() => { window.location.reload(); }, 100);
+      navigate(dashboardPaths[loggedInUser.role], { replace: true });
     } catch {
-      // Trigger shake animation on error
       setShakeForm(true);
       setTimeout(() => setShakeForm(false), 600);
     }
