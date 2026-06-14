@@ -16,6 +16,7 @@ import { PageTransition } from '@/components/layout/PageTransition';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { loyaltyService } from '@/services/loyaltyService';
+import { aiService } from '@/services/aiService';
 import type { LoyaltyAccount, LoyaltyTransaction } from '@/services/loyaltyService';
 import { formatCurrency, formatDate } from '@/utils';
 import { cn } from '@/utils/cn';
@@ -60,6 +61,7 @@ export const Wallet: React.FC = () => {
   const [hasWallet, setHasWallet] = useState(true);
   const [topUpAmount, setTopUpAmount] = useState(100);
   const [isTopUpLoading, setIsTopUpLoading] = useState(false);
+  const [budgetEstimate, setBudgetEstimate] = useState<{ spent_this_month: number; upcoming_appointments: number; projected_total_this_month: number; message: string } | null>(null);
 
   const loadWallet = useCallback(async () => {
     setIsLoading(true);
@@ -170,6 +172,8 @@ export const Wallet: React.FC = () => {
 
   useEffect(() => {
     loadWallet();
+    // AI #27: Budget estimator
+    aiService.getBudgetEstimate().then(setBudgetEstimate).catch(() => {});
   }, [loadWallet]);
 
   const balance = account?.points ?? 0;
@@ -219,6 +223,30 @@ export const Wallet: React.FC = () => {
             Earn points on every booking and redeem them for discounts
           </p>
         </motion.div>
+
+        {/* AI #27: Budget Estimator */}
+        {budgetEstimate && (
+          <motion.div variants={itemVariants}>
+            <Card className="border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/10">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-300">AI Budget Estimate</h2>
+                <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 uppercase tracking-wide">AI</span>
+              </div>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{budgetEstimate.message}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Spent This Month</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">₹{budgetEstimate.spent_this_month.toLocaleString('en-IN')}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Projected Total</p>
+                  <p className="text-lg font-bold text-primary-600 dark:text-primary-400">₹{budgetEstimate.projected_total_this_month.toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Hero balance card */}
         <motion.div variants={itemVariants}>

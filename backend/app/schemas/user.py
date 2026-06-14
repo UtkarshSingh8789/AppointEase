@@ -52,7 +52,7 @@ class UserUpdate(BaseModel):
 
     full_name: Optional[str] = Field(None, min_length=2, max_length=255)
     phone_number: Optional[str] = Field(None, max_length=20)
-    avatar_url: Optional[str] = Field(None, max_length=500)
+    avatar_url: Optional[str] = Field(None, max_length=65535)
 
 
 class PasswordChange(BaseModel):

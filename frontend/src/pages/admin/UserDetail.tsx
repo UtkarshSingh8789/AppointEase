@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Mail, Phone, Shield, UserCheck, Calendar, MapPin, Briefcase, Star } from 'lucide-react';
+import { Mail, Phone, Shield, UserCheck, Calendar, MapPin, Briefcase, Star, Brain } from 'lucide-react';
 import { adminService } from '@/services/adminService';
+import { aiService } from '@/services/aiService';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -16,6 +17,7 @@ export const UserDetail: React.FC = () => {
     provider?: Awaited<ReturnType<typeof adminService.getUser>>['provider'];
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [ltv, setLtv] = useState<{ predicted_ltv_6m: number; total_spent_to_date: number; tier: string; recommendation: string; total_appointments: number } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -24,6 +26,9 @@ export const UserDetail: React.FC = () => {
       try {
         const data = await adminService.getUser(id);
         setUserDetail(data);
+        if (data.user.role === 'customer') {
+          aiService.getCustomerLifetimeValue(id).then(setLtv).catch(() => {});
+        }
       } catch {
         // Handled by interceptor
       } finally {
@@ -133,6 +138,36 @@ export const UserDetail: React.FC = () => {
             </div>
           </div>
         </Card>
+
+        {/* AI #50: Customer Lifetime Value */}
+        {ltv && (
+          <Card className="dark:bg-gray-800 dark:border-gray-700 border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-2 mb-3">
+              <Brain className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <h2 className="text-sm font-semibold text-green-700 dark:text-green-300">AI Customer Lifetime Value</h2>
+              <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 uppercase tracking-wide">AI</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/10 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Predicted LTV (6m)</p>
+                <p className="text-lg font-bold text-green-700 dark:text-green-300">₹{ltv.predicted_ltv_6m.toLocaleString('en-IN')}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Total Spent</p>
+                <p className="text-lg font-bold text-gray-800 dark:text-gray-200">₹{ltv.total_spent_to_date.toLocaleString('en-IN')}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Appointments</p>
+                <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{ltv.total_appointments}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Tier</p>
+                <p className="text-lg font-bold text-blue-700 dark:text-blue-300">{ltv.tier}</p>
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">{ltv.recommendation}</p>
+          </Card>
+        )}
 
         {provider && (
           <Card className="dark:bg-gray-800 dark:border-gray-700">

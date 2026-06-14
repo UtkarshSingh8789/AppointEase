@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Star, Briefcase, LayoutGrid, List, Clock } from 'lucide-react';
+import { MapPin, Star, Briefcase, LayoutGrid, List, Clock, Brain, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useProviderStore } from '@/store/providerStore';
 import { getProviderImage } from '@/utils/providerImages';
 import { useCategories } from '@/hooks/useCategories';
+import { aiService } from '@/services/aiService';
 import { AdvancedSearch } from '@/components/search/AdvancedSearch';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
@@ -32,9 +33,21 @@ export const ProviderListings: React.FC = () => {
   const { categories } = useCategories();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [minRating, setMinRating] = useState(0);
+  const [nlpQuery, setNlpQuery] = useState('');
+  const [nlpResults, setNlpResults] = useState<{ id: string; name: string; category: string; specialization: string; location: string; rating: number; hourly_rate: number }[] | null>(null);
+  const [nlpLoading, setNlpLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const categoryScrollRef = useRef<HTMLDivElement | null>(null);
   const isInitialMount = useRef(true);
+
+  const handleNlpSearch = async () => {
+    if (!nlpQuery.trim()) { setNlpResults(null); return; }
+    setNlpLoading(true);
+    try {
+      const data = await aiService.smartSearchProviders(nlpQuery);
+      setNlpResults(data.results || []);
+    } catch { setNlpResults([]); } finally { setNlpLoading(false); }
+  };
 
   // Initial fetch on mount
   useEffect(() => {
@@ -145,6 +158,65 @@ export const ProviderListings: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* AI #22: Smart NLP Search */}
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Brain className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-500" />
+            <input
+              type="text"
+              value={nlpQuery}
+              onChange={(e) => { setNlpQuery(e.target.value); if (!e.target.value) setNlpResults(null); }}
+              onKeyDown={(e) => e.key === 'Enter' && handleNlpSearch()}
+              placeholder='AI Search: "yoga teacher in Pune on weekends"'
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-primary-300 dark:border-primary-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            />
+          </div>
+          <button onClick={handleNlpSearch} disabled={nlpLoading || !nlpQuery.trim()}
+            className="px-4 py-2.5 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+            {nlpLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search className="w-4 h-4" />}
+            Search
+          </button>
+          {nlpResults && <button onClick={() => { setNlpResults(null); setNlpQuery(''); }} className="px-3 py-2.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">Clear</button>}
+        </div>
+
+        {/* NLP search results */}
+        {nlpResults && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Brain className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">AI found {nlpResults.length} result{nlpResults.length !== 1 ? 's' : ''} for "{nlpQuery}"</p>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 uppercase tracking-wide">AI</span>
+            </div>
+            {nlpResults.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">No providers matched your query. Try different keywords.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                {nlpResults.map((p) => (
+                  <Link key={p.id} to={`/providers/${p.id}`}>
+                    <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all dark:bg-gray-800 dark:border-gray-700 cursor-pointer border-primary-200 dark:border-primary-800">
+                      <div className="flex items-center gap-3">
+                        <Avatar name={p.name} src={getProviderImage(p.id)} size="md" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{p.name}</p>
+                          <p className="text-xs text-primary-600 dark:text-primary-400">{p.specialization}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{p.location}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{p.rating.toFixed(1)}</span>
+                        </div>
+                        {p.hourly_rate && <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{formatCurrency(p.hourly_rate)}/hr</span>}
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Search + Inline Filters — Full Width */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">

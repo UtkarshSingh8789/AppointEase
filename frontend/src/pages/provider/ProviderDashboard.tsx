@@ -4,6 +4,7 @@ import { Calendar, CheckCircle, Clock, XCircle, Star, TrendingUp } from 'lucide-
 import { providerService } from '@/services/providerService';
 import { appointmentService } from '@/services/appointmentService';
 import { useAuthStore } from '@/store/authStore';
+import { aiService } from '@/services/aiService';
 import { StatsCard } from '@/components/ui/StatsCard';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -38,6 +39,7 @@ export const ProviderDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [pricingInsights, setPricingInsights] = useState<PricingInsights | null>(null);
   const [pricingLoading, setPricingLoading] = useState(false);
+  const [earningsInsights, setEarningsInsights] = useState<{ insights: string[]; best_day?: string; best_hour?: string; total_completed?: number } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,19 +58,22 @@ export const ProviderDashboard: React.FC = () => {
     };
     fetchData();
 
-    // AI Feature #7: load pricing insights lazily after main data
+    // AI #7: pricing insights
     const loadPricing = async () => {
       setPricingLoading(true);
       try {
         const res = await api.get('/providers/me/pricing-insights');
         setPricingInsights(res.data);
-      } catch {
-        // Non-critical — silently skip
-      } finally {
+      } catch { /* silent */ } finally {
         setPricingLoading(false);
       }
     };
     void loadPricing();
+
+    // AI #49: earnings insights
+    aiService.getEarningsInsights().then((d: { insights: string[]; best_day?: string; best_hour?: string }) => {
+      if (d?.insights?.length) setEarningsInsights(d);
+    }).catch(() => {});
   }, []);
 
   if (isLoading) {
@@ -188,6 +193,36 @@ export const ProviderDashboard: React.FC = () => {
               <p className="text-sm text-red-600">Cancelled</p>
             </div>
           </div>
+        </Card>
+      )}
+
+      {/* AI #49: Earnings Insights */}
+      {earningsInsights && (
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">AI Earnings Insights</h2>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 uppercase tracking-wide">AI</span>
+          </div>
+          <div className="space-y-2">
+            {earningsInsights.insights.map((insight, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-green-500 font-bold mt-0.5">→</span>{insight}
+              </div>
+            ))}
+          </div>
+          {earningsInsights.best_day && (
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/10 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Best Day</p>
+                <p className="font-bold text-green-700 dark:text-green-300">{earningsInsights.best_day}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/10 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Peak Hour</p>
+                <p className="font-bold text-green-700 dark:text-green-300">{earningsInsights.best_hour}</p>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

@@ -15,6 +15,7 @@ from app.routers import (
     achievements,
     admin,
     ai_chat,
+    ai_features,
     appointments,
     auth,
     availability,
@@ -86,6 +87,7 @@ app.include_router(chat.router)
 app.include_router(coupons.router)
 app.include_router(achievements.router)
 app.include_router(ai_chat.router)
+app.include_router(ai_features.router)
 app.include_router(payments.router)
 app.include_router(reminders.router)
 
@@ -121,4 +123,10 @@ async def root():
 async def health_check():
     """Health check endpoint."""
     return {"status": "ok"}
+
+
+@app.get("/ping", tags=["Health"])
+async def ping():
+    """Lightweight keep-alive endpoint to prevent cold starts."""
+    return {"pong": True}
 

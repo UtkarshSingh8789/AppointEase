@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, CheckCircle, Users, TrendingUp, Plus, Star } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, Users, TrendingUp, Plus, Star, Brain } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
 import { appointmentService } from '@/services/appointmentService';
 import { providerService } from '@/services/providerService';
+import { aiService } from '@/services/aiService';
 import { StatsCard } from '@/components/ui/StatsCard';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -55,6 +56,7 @@ export const CustomerDashboard: React.FC = () => {
   const [recommendedProviders, setRecommendedProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<CustomerStats | null>(null);
+  const [nextBooking, setNextBooking] = useState<{ prediction: { category: string; reason: string; suggested_providers: Provider[] } | null } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,6 +76,14 @@ export const CustomerDashboard: React.FC = () => {
       }
     };
     fetchData();
+
+    // AI #12: Booking intent predictor (lazy)
+    aiService.getNextBookingPrediction().then((data) => setNextBooking(data)).catch(() => {});
+
+    // AI #21: Personalised recommendations — replace generic providers
+    aiService.getPersonalisedRecommendations().then((data) => {
+      if (data?.recommendations?.length) setRecommendedProviders(data.recommendations.slice(0, 3));
+    }).catch(() => {});
   }, []);
 
   const nextAppointment = upcoming[0];
@@ -263,11 +273,41 @@ export const CustomerDashboard: React.FC = () => {
           )}
         </Card>
 
+        {/* AI #12: Booking Intent Prediction */}
+        {nextBooking?.prediction && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            <Card className="border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/10">
+              <div className="flex items-center gap-2 mb-3">
+                <Brain className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-400">You might want to book...</h2>
+                <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 uppercase tracking-wide">AI</span>
+              </div>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                Based on your history, you're likely to need <strong>{nextBooking.prediction.category}</strong> next.
+                {' '}<span className="text-xs text-gray-500">{nextBooking.prediction.reason}</span>
+              </p>
+              {nextBooking.prediction.suggested_providers?.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {nextBooking.prediction.suggested_providers.slice(0, 2).map((p: Provider & { name?: string }) => (
+                    <Link key={p.id} to={`/providers/${p.id}`} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 hover:border-primary-400 transition-colors">
+                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                      {p.name ?? p.user?.full_name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </motion.div>
+        )}
+
         {/* Recommended Providers */}
         {recommendedProviders.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recommended Providers</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recommended for You</h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 uppercase tracking-wide">AI</span>
+              </div>
               <Link to="/providers" className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 font-medium">
                 View all
               </Link>

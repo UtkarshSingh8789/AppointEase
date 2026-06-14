@@ -167,7 +167,7 @@ async def google_oauth_url():
         "response_type": "code",
         "scope": "openid email profile",
         "access_type": "offline",
-        "prompt": "consent",
+        "prompt": "select_account",
     }
     url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(query_params)}"
     return {"url": url}

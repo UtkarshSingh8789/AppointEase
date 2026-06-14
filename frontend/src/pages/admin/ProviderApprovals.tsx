@@ -39,6 +39,7 @@ const DOCUMENT_AI_PROMPTS = [
 
 export const ProviderApprovals: React.FC = () => {
   const [providers, setProviders] = useState<ProviderApproval[]>([]);
+  const [actionStatus, setActionStatus] = useState<Record<string, 'approved' | 'rejected'>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [reasonById, setReasonById] = useState<Record<string, string>>({});
@@ -77,7 +78,7 @@ export const ProviderApprovals: React.FC = () => {
         reason: reasonById[providerId]?.trim() || undefined,
       });
       toast.success(action === 'approve' ? 'Provider approved' : 'Provider rejected');
-      setProviders((prev) => prev.filter((item) => item.provider.id !== providerId));
+      setActionStatus((prev) => ({ ...prev, [providerId]: action === 'approve' ? 'approved' : 'rejected' }));
     } catch {
       toast.error('Could not update provider approval');
     } finally {
@@ -154,11 +155,15 @@ export const ProviderApprovals: React.FC = () => {
               const provider = item.provider;
               const application = (item.application || {}) as Record<string, unknown>;
               const isExpanded = expandedById[provider.id];
+              const status = actionStatus[provider.id];
 
               return (
                 <Card
                   key={provider.id}
-                  className="dark:bg-gray-800 dark:border-gray-700 overflow-hidden"
+                  className={`dark:bg-gray-800 dark:border-gray-700 overflow-hidden transition-all ${
+                    status === 'approved' ? 'border-green-300 dark:border-green-700 bg-green-50/30 dark:bg-green-900/10' :
+                    status === 'rejected' ? 'border-red-300 dark:border-red-700 bg-red-50/30 dark:bg-red-900/10' : ''
+                  }`}
                   padding={false}
                 >
                   {/* ── Card header ───────────────────────────── */}
@@ -181,7 +186,17 @@ export const ProviderApprovals: React.FC = () => {
                           <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
                             {provider.user?.full_name || 'Provider'}
                           </h2>
-                          <Badge status="pending" />
+                          {status === 'approved' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                              <Check className="w-3 h-3" /> Approved
+                            </span>
+                          )}
+                          {status === 'rejected' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
+                              <X className="w-3 h-3" /> Rejected
+                            </span>
+                          )}
+                          {!status && <Badge status="pending" />}
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{provider.user?.email}</p>
                       </div>
@@ -568,18 +583,20 @@ export const ProviderApprovals: React.FC = () => {
                               fullWidth
                               leftIcon={<Check className="w-4 h-4" />}
                               isLoading={processingId === provider.id}
+                              disabled={!!status}
                               onClick={() => handleAction(provider.id, 'approve')}
                             >
-                              Approve Provider
+                              {status === 'approved' ? 'Approved ✓' : 'Approve Provider'}
                             </Button>
                             <Button
                               fullWidth
                               variant="danger"
                               leftIcon={<X className="w-4 h-4" />}
                               isLoading={processingId === provider.id}
+                              disabled={!!status}
                               onClick={() => handleAction(provider.id, 'reject')}
                             >
-                              Reject Provider
+                              {status === 'rejected' ? 'Rejected ✗' : 'Reject Provider'}
                             </Button>
                           </div>
                         </div>
@@ -604,18 +621,20 @@ export const ProviderApprovals: React.FC = () => {
                           size="sm"
                           leftIcon={<Check className="w-3.5 h-3.5" />}
                           isLoading={processingId === provider.id}
+                          disabled={!!status}
                           onClick={() => handleAction(provider.id, 'approve')}
                         >
-                          Approve
+                          {status === 'approved' ? 'Approved' : 'Approve'}
                         </Button>
                         <Button
                           size="sm"
                           variant="danger"
                           leftIcon={<X className="w-3.5 h-3.5" />}
                           isLoading={processingId === provider.id}
+                          disabled={!!status}
                           onClick={() => handleAction(provider.id, 'reject')}
                         >
-                          Reject
+                          {status === 'rejected' ? 'Rejected' : 'Reject'}
                         </Button>
                       </div>
                     </div>

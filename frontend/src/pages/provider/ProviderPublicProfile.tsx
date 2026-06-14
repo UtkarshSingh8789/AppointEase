@@ -1,19 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {
-  ArrowLeft,
-  Briefcase,
-  Calendar,
-  CheckCircle,
-  Clock,
-  Copy,
-  MapPin,
-  Share2,
-  Star,
-} from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, CheckCircle, Clock, Copy, MapPin, Share2, Star, Brain, Sparkles } from 'lucide-react';
 import { providerService } from '@/services/providerService';
 import { reviewService } from '@/services/reviewService';
+import { aiService } from '@/services/aiService';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -32,6 +23,8 @@ export const ProviderPublicProfile: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'reviews'>('about');
+  const [draftReplies, setDraftReplies] = useState<Record<string, string>>({});
+  const [draftLoading, setDraftLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,6 +62,17 @@ export const ProviderPublicProfile: React.FC = () => {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDraftReply = async (review: Review) => {
+    if (!id) return;
+    setDraftLoading((p) => ({ ...p, [review.id]: true }));
+    try {
+      const data = await aiService.getAutoReply(id, `Customer review (${review.rating}/5): "${review.comment || 'No comment'}"`);
+      setDraftReplies((p) => ({ ...p, [review.id]: data.reply }));
+    } catch { /* silent */ } finally {
+      setDraftLoading((p) => ({ ...p, [review.id]: false }));
     }
   };
 
@@ -310,34 +314,29 @@ export const ProviderPublicProfile: React.FC = () => {
               </Card>
             ) : (
               reviews.map((review, index) => (
-                <motion.div
-                  key={review.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
+                <motion.div key={review.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
                   <Card className="dark:bg-gray-800 dark:border-gray-700">
                     <div className="flex items-start gap-3">
-                      <Avatar
-                        name={review.customer?.full_name || 'Customer'}
-                        size="sm"
-                      />
+                      <Avatar name={review.customer?.full_name || 'Customer'} size="sm" />
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {review.customer?.full_name || 'Anonymous'}
-                          </p>
-                          <span className="text-xs text-gray-400 dark:text-gray-500">
-                            {new Date(review.created_at).toLocaleDateString()}
-                          </span>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{review.customer?.full_name || 'Anonymous'}</p>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">{new Date(review.created_at).toLocaleDateString()}</span>
                         </div>
-                        <div className="mt-1">
-                          <StarRating value={review.rating} readonly size="sm" />
+                        <div className="mt-1"><StarRating value={review.rating} readonly size="sm" /></div>
+                        {review.comment && <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{review.comment}</p>}
+                        {/* AI #17: Review Response Drafter */}
+                        <div className="mt-2">
+                          <Button size="sm" variant="secondary" leftIcon={<Sparkles className="w-3 h-3" />}
+                            onClick={() => handleDraftReply(review)}
+                            isLoading={draftLoading[review.id]}
+                          >Draft AI Reply</Button>
                         </div>
-                        {review.comment && (
-                          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            {review.comment}
-                          </p>
+                        {draftReplies[review.id] && (
+                          <div className="mt-2 p-2 rounded-lg bg-primary-50 dark:bg-primary-900/10 border border-primary-200 dark:border-primary-800">
+                            <p className="text-xs font-semibold text-primary-700 dark:text-primary-300 mb-1 flex items-center gap-1"><Brain className="w-3 h-3" />AI Draft Reply</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 italic">{draftReplies[review.id]}</p>
+                          </div>
                         )}
                       </div>
                     </div>

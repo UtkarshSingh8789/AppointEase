@@ -5,7 +5,7 @@ import hmac
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -123,6 +123,32 @@ async def create_order(
         logger.error(f"Payment order error: {e}")
         amount_paise = int(data.amount * 100)
         return _mock_order_response(data, amount_paise)
+
+
+@router.post("/webhook")
+async def razorpay_webhook(request: Request):
+    """Handle Razorpay webhook events."""
+    body = await request.body()
+    signature = request.headers.get("x-razorpay-signature", "")
+
+    if settings.RAZORPAY_WEBHOOK_SECRET and signature:
+        expected = hmac.new(
+            settings.RAZORPAY_WEBHOOK_SECRET.encode(),
+            body,
+            hashlib.sha256,
+        ).hexdigest()
+        if not hmac.compare_digest(expected, signature):
+            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+
+    try:
+        import json
+        payload = json.loads(body)
+        event = payload.get("event", "")
+        logger.info(f"Razorpay webhook received: {event}")
+    except Exception as e:
+        logger.error(f"Webhook parse error: {e}")
+
+    return {"status": "ok"}
 
 
 @router.post("/verify")

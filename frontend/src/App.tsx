@@ -60,6 +60,17 @@ const App: React.FC = () => {
   const [isProcessingOAuth, setIsProcessingOAuth] = React.useState(hasOAuthTokens);
 
   useEffect(() => {
+    // Keep Render backend warm — ping every 10 min to prevent cold starts
+    const backendUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || '';
+    if (backendUrl) {
+      const ping = () => fetch(`${backendUrl}/ping`).catch(() => {});
+      ping();
+      const interval = setInterval(ping, 10 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, []);
+
+  useEffect(() => {
     // Handle OAuth callback — extract tokens from URL params
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get('access_token');

@@ -38,7 +38,7 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole), default=UserRole.CUSTOMER, nullable=False
     )
-    avatar_url: Mapped[str] = mapped_column(String(500), nullable=True)
+    avatar_url: Mapped[str] = mapped_column(String(65535), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_super_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

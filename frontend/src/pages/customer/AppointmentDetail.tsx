@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, MapPin, FileText, MessageSquare, Send } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, FileText, MessageSquare, Send, Brain, ListChecks } from 'lucide-react';
 import { useAppointmentStore } from '@/store/appointmentStore';
 import { appointmentService } from '@/services/appointmentService';
 import { reviewService } from '@/services/reviewService';
+import { aiService } from '@/services/aiService';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -32,6 +33,10 @@ export const AppointmentDetail: React.FC = () => {
   const [comments, setComments] = useState<AppointmentComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  // AI states
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [followupSuggestions, setFollowupSuggestions] = useState<string[]>([]);
+  const [rescheduleSuggestions, setRescheduleSuggestions] = useState<{ date: string; start_time: string; reason: string; confidence: number }[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -40,6 +45,18 @@ export const AppointmentDetail: React.FC = () => {
       loadReviewState(id);
     }
   }, [id, fetchAppointment]);
+
+  // Load AI features after appointment is fetched
+  useEffect(() => {
+    if (!id || !selectedAppointment) return;
+    if (selectedAppointment.status === 'completed') {
+      aiService.getAppointmentSummary(id).then((d) => d?.summary && setAiSummary(d.summary)).catch(() => {});
+      aiService.getFollowupSuggestions(id).then((d) => d?.suggestions?.length && setFollowupSuggestions(d.suggestions)).catch(() => {});
+    }
+    if (selectedAppointment.status === 'cancelled') {
+      aiService.getRescheduleSuggestions(id).then((d) => d?.suggestions?.length && setRescheduleSuggestions(d.suggestions)).catch(() => {});
+    }
+  }, [id, selectedAppointment]);
 
   const loadComments = async (appointmentId: string) => {
     try {
@@ -323,46 +340,60 @@ export const AppointmentDetail: React.FC = () => {
         </div>
       </Card>
 
-      {/* AI Feature #4: Post-appointment AI summary */}
-      {appointment.status === 'completed' && appointment.ai_summary && (() => {
-        try {
-          const summary = JSON.parse(appointment.ai_summary);
-          return (
-            <Card className="dark:bg-gray-800 dark:border-gray-700 border-primary-200 dark:border-primary-800">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-primary-600 dark:text-primary-400 text-base">✨</span>
-                <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-400 uppercase tracking-wide">
-                  AI Follow-up Summary
-                </h2>
+      {/* AI #10: Appointment Summary */}
+      {appointment.status === 'completed' && aiSummary && (
+        <Card className="dark:bg-gray-800 dark:border-gray-700 border-primary-200 dark:border-primary-800">
+          <div className="flex items-center gap-2 mb-3">
+            <Brain className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+            <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-400 uppercase tracking-wide">AI Session Summary</h2>
+            <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 uppercase tracking-wide">AI</span>
+          </div>
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{aiSummary}</p>
+        </Card>
+      )}
+
+      {/* AI #26: Follow-up Suggestions */}
+      {appointment.status === 'completed' && followupSuggestions.length > 0 && (
+        <Card className="dark:bg-gray-800 dark:border-gray-700 border-green-200 dark:border-green-800">
+          <div className="flex items-center gap-2 mb-3">
+            <ListChecks className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <h2 className="text-sm font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide">Next Steps</h2>
+            <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 uppercase tracking-wide">AI</span>
+          </div>
+          <ul className="space-y-2">
+            {followupSuggestions.map((s, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-green-500 mt-0.5 font-bold">→</span>{s}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {/* AI #9: Reschedule Suggestions (shown when cancelled) */}
+      {appointment.status === 'cancelled' && rescheduleSuggestions.length > 0 && (
+        <Card className="dark:bg-gray-800 dark:border-gray-700 border-amber-200 dark:border-amber-800">
+          <div className="flex items-center gap-2 mb-3">
+            <Brain className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <h2 className="text-sm font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">AI Reschedule Suggestions</h2>
+            <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 uppercase tracking-wide">AI</span>
+          </div>
+          <div className="space-y-2">
+            {rescheduleSuggestions.map((s, i) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.date} at {s.start_time}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{s.reason}</p>
+                </div>
+                <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">{Math.round(s.confidence * 100)}%</span>
               </div>
-              {summary.summary && (
-                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">{summary.summary}</p>
-              )}
-              {summary.next_steps && summary.next_steps.length > 0 && (
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Next steps</p>
-                  <ul className="space-y-1">
-                    {summary.next_steps.map((step: string, i: number) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
-                        <span className="text-primary-500 mt-0.5">→</span>
-                        {step}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {summary.draft_message && (
-                <div className="rounded-lg bg-gray-50 dark:bg-gray-700/50 px-3 py-2.5">
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Provider's message draft</p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 italic">"{summary.draft_message}"</p>
-                </div>
-              )}
-            </Card>
-          );
-        } catch {
-          return null;
-        }
-      })()}
+            ))}
+          </div>
+          <Link to={`/appointments/${appointment.id}/reschedule`} className="mt-3 block">
+            <button className="w-full text-sm font-medium text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 py-1 transition-colors">Reschedule now →</button>
+          </Link>
+        </Card>
+      )}
 
       {/* Cancel modal */}
       <Modal
