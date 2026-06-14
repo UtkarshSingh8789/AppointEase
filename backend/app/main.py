@@ -102,6 +102,38 @@ async def _startup():
     from app.core.redis import get_redis
     await get_redis()
     logger.info("Database tables created/verified.")
+    await _run_ai_seed()
+
+
+async def _run_ai_seed():
+    """Run AI seed once — skips automatically if data already exists."""
+    try:
+        from app.core.database import async_session_maker
+        from sqlalchemy import select, func
+        from app.models.appointment import Appointment
+        async with async_session_maker() as db:
+            # Check if ai_summary is already seeded
+            r = await db.execute(
+                select(func.count(Appointment.id)).where(Appointment.ai_summary.isnot(None))
+            )
+            already_seeded = (r.scalar() or 0) >= 5
+        if already_seeded:
+            logger.info("AI seed already applied — skipping.")
+            return
+        logger.info("Running AI seed data...")
+        import importlib.util, os, sys
+        seed_path = os.path.join(os.path.dirname(__file__), "..", "seed_ai.py")
+        seed_path = os.path.abspath(seed_path)
+        if os.path.exists(seed_path):
+            spec = importlib.util.spec_from_file_location("seed_ai", seed_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            await module.seed_ai_data()
+            logger.info("AI seed data applied successfully.")
+        else:
+            logger.warning("seed_ai.py not found — skipping AI seed.")
+    except Exception as e:
+        logger.warning(f"AI seed skipped due to error: {e}")
 
 
 @app.on_event("startup")
