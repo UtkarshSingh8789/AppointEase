@@ -59,6 +59,14 @@ export const ProviderApprovals: React.FC = () => {
     try {
       const data = await adminService.getPendingProviders();
       setProviders(data.providers);
+      // Seed actionStatus from server-side review_status so approved/rejected persist after reload
+      const serverStatuses: Record<string, 'approved' | 'rejected'> = {};
+      for (const item of (data.providers as ProviderApproval[])) {
+        const rs = (item as unknown as { review_status?: string }).review_status;
+        if (rs === 'approved') serverStatuses[item.provider.id] = 'approved';
+        if (rs === 'rejected') serverStatuses[item.provider.id] = 'rejected';
+      }
+      setActionStatus(serverStatuses);
     } catch {
       // Error handled by interceptor
     } finally {
@@ -146,8 +154,8 @@ export const ProviderApprovals: React.FC = () => {
         ) : providers.length === 0 ? (
           <EmptyState
             icon={<BadgeCheck className="w-8 h-8 text-gray-400" />}
-            title="No pending approvals"
-            description="All provider applications have been reviewed."
+            title="No provider applications"
+            description="No provider onboarding applications in the last 30 days."
           />
         ) : (
           <div className="grid gap-6">

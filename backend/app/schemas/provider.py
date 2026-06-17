@@ -106,3 +106,4 @@ class ProviderApprovalResponse(BaseModel):
     documents: list[OnboardingDocument] = Field(default_factory=list)
     application: Optional[dict] = None
     summary: Optional[str] = None
+    review_status: str = "pending"  # pending | approved | rejected

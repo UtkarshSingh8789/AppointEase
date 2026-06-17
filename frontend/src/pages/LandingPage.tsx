@@ -722,7 +722,7 @@ export const LandingPage: React.FC = () => {
               </p>
             </Reveal>
 
-            <div className="mt-14 grid grid-cols-1 lg:grid-cols-2 max-w-4xl border-t border-l border-black dark:border-neutral-800">
+            <div className="mt-14 grid grid-cols-1 lg:grid-cols-3 max-w-6xl mx-auto border-t border-l border-black dark:border-neutral-800">
               {/* Customer plan */}
               <Reveal className="border-b border-r border-black dark:border-neutral-800">
                 <div className="h-full p-8 lg:p-10 flex flex-col">
@@ -753,22 +753,19 @@ export const LandingPage: React.FC = () => {
                 </div>
               </Reveal>
 
-              {/* Provider plan — inverted, most popular */}
+              {/* Provider plan */}
               <Reveal delay={0.1} className="border-b border-r border-black dark:border-neutral-800">
-                <div className="h-full p-8 lg:p-10 flex flex-col bg-black text-white dark:bg-neutral-100 dark:text-black inverted light-inverted">
+                <div className="h-full p-8 lg:p-10 flex flex-col bg-white dark:bg-neutral-950">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-300 dark:text-neutral-600">
+                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400">
                       Provider
                     </p>
-                    <span className="border border-white dark:border-black px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]">
-                      Most popular
-                    </span>
                   </div>
                   <div className="mt-5 flex items-baseline gap-2">
                     <span className="text-5xl font-bold tracking-tighter">Free</span>
-                    <span className="text-neutral-400 dark:text-neutral-600">onboarding</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">onboarding</span>
                   </div>
-                  <p className="mt-4 text-[15px] text-neutral-300 dark:text-neutral-700">
+                  <p className="mt-4 text-[15px] text-neutral-600 dark:text-neutral-300">
                     Fill out your details, upload documents, and wait for admin approval.
                   </p>
                   <ul className="mt-8 space-y-3 flex-1">
@@ -781,11 +778,52 @@ export const LandingPage: React.FC = () => {
                   </ul>
                   <Link
                     to="/register"
-                    className="mt-10 inline-flex items-center justify-center gap-2 w-full px-6 py-4 text-sm font-semibold border transition-colors duration-200"
-                    style={{ backgroundColor: '#fff', color: '#000', borderColor: '#fff' }}
+                    className="mt-10 inline-flex items-center justify-center gap-2 w-full px-6 py-4 text-sm font-semibold border border-black text-black hover:bg-black hover:text-white dark:border-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-100 dark:hover:text-black transition-colors duration-200"
                   >
                     Start free trial
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                  </Link>
+                </div>
+              </Reveal>
+
+              {/* Premium plan — inverted, most popular */}
+              <Reveal delay={0.2} className="border-b border-r border-black dark:border-neutral-800">
+                <div className="h-full p-8 lg:p-10 flex flex-col bg-black text-white dark:bg-neutral-100 dark:text-black inverted light-inverted">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-300 dark:text-neutral-600">
+                      Premium
+                    </p>
+                    <span className="border border-white dark:border-black px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]">
+                      Most popular
+                    </span>
+                  </div>
+                  <div className="mt-5 flex items-baseline gap-2">
+                    <span className="text-5xl font-bold tracking-tighter">₹999</span>
+                    <span className="text-neutral-400 dark:text-neutral-600">/month</span>
+                  </div>
+                  <p className="mt-4 text-[15px] text-neutral-300 dark:text-neutral-700">
+                    Unlock exclusive AI features, advanced analytics, and priority support.
+                  </p>
+                  <ul className="mt-8 space-y-3 flex-1">
+                    {[
+                      'Advanced AI Smart Slot Recommendation',
+                      'Predictive Booking Intent',
+                      'Advanced Analytics & Forecasting',
+                      'Priority Booking & Support',
+                      'Fraud Alerts & Churn Prediction',
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-3 text-[15px]">
+                        <Check className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    to="/premium"
+                    className="mt-10 inline-flex items-center justify-center gap-2 w-full px-6 py-4 text-sm font-semibold border transition-colors duration-200 bg-white text-black border-white hover:bg-neutral-200 dark:bg-black dark:text-white dark:border-black dark:hover:bg-neutral-800"
+                  >
+                    Upgrade to Premium
+                    <Zap className="w-4 h-4" aria-hidden="true" />
                   </Link>
                 </div>
               </Reveal>

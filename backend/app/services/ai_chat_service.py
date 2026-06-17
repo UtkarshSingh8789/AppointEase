@@ -18,6 +18,9 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 # Only include files that actually exist.
 KNOWLEDGE_FILES = (
     REPO_ROOT / "README.md",
+    REPO_ROOT / "Appointment-Scheduling" / "README.md",
+    REPO_ROOT / "Appointment-Scheduling" / "AI-FEATURES-ROADMAP.md",
+    REPO_ROOT / "Appointment-Scheduling" / "BUGS-AND-IMPROVEMENTS.md",
 )
 
 # Bug #13/#33 fix: file-hash-based cache — refreshes when README changes on disk.

@@ -212,7 +212,12 @@ class AdminService:
         }
 
     async def get_pending_providers(self) -> list[dict]:
-        """Get providers awaiting approval with onboarding files."""
+        """Get all providers that have submitted onboarding — pending, approved, and rejected.
+
+        Approved/rejected providers from the last 30 days are included so admins
+        can see the full review history without entries vanishing after action.
+        """
+        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
         result = await self.db.execute(
             select(ServiceProvider)
             .options(
@@ -220,13 +225,27 @@ class AdminService:
                 joinedload(ServiceProvider.category),
             )
             .join(ServiceProvider.user)
-            .where(ServiceProvider.is_verified == False, User.is_active == True)
-            .order_by(ServiceProvider.created_at.desc())
+            .where(
+                # Pending (not verified, active user) OR recently processed (updated in last 30 days)
+                (
+                    (ServiceProvider.is_verified == False) |
+                    (ServiceProvider.updated_at >= cutoff)
+                ),
+                User.role == UserRole.PROVIDER,
+            )
+            .order_by(ServiceProvider.updated_at.desc())
         )
         providers = result.unique().scalars().all()
         approvals: list[dict] = []
         for provider in providers:
             application = get_application(str(provider.id)) or {}
+            # Determine review status
+            if provider.is_verified:
+                review_status = "approved"
+            elif provider.user and not provider.user.is_active:
+                review_status = "rejected"
+            else:
+                review_status = "pending"
             approvals.append(
                 {
                     "provider": provider,
@@ -234,6 +253,7 @@ class AdminService:
                     "documents": application.get("documents", []),
                     "application": application.get("payload"),
                     "summary": build_application_summary(application),
+                    "review_status": review_status,
                 }
             )
         return approvals

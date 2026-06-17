@@ -1,5 +1,10 @@
 """Seed script to populate the database with comprehensive Indian-context sample data."""
 
+import random
+import json
+from sqlalchemy import update, func
+from app.models.invoice import Invoice
+from app.models.loyalty import LoyaltyAccount
 import asyncio
 import uuid
 from datetime import date, datetime, time, timedelta, timezone
@@ -19,6 +24,63 @@ from app.models.provider import ServiceProvider
 from app.models.review import Review
 from app.models.service_category import ServiceCategory
 from app.models.user import User, UserRole
+from app.services.provider_application_service import DATA_FILE, UPLOAD_DIR
+
+
+def _write_provider_application_record(
+    *,
+    provider_id: str,
+    user_id: str,
+    payload: dict,
+    avatar_svg: str,
+    documents: list[tuple[str, str, str]],
+) -> None:
+    """Persist a seed onboarding application with real files on disk."""
+    provider_dir = UPLOAD_DIR / provider_id
+    provider_dir.mkdir(parents=True, exist_ok=True)
+
+    avatar_filename = "avatar.svg"
+    (provider_dir / avatar_filename).write_text(avatar_svg, encoding="utf-8")
+
+    saved_avatar = {
+        "name": avatar_filename,
+        "path": f"/uploads/provider-applications/{provider_id}/{avatar_filename}",
+        "content_type": "image/svg+xml",
+        "size": len(avatar_svg.encode("utf-8")),
+        "preview": None,
+    }
+
+    saved_docs = []
+    for index, (filename, content_type, body) in enumerate(documents, start=1):
+        safe_filename = f"document-{index}-{filename}"
+        file_path = provider_dir / safe_filename
+        file_path.write_text(body, encoding="utf-8")
+        saved_docs.append(
+            {
+                "name": filename,
+                "path": f"/uploads/provider-applications/{provider_id}/{safe_filename}",
+                "content_type": content_type,
+                "size": len(body.encode("utf-8")),
+                "preview": body[:800],
+            }
+        )
+
+    store = {}
+    if DATA_FILE.exists():
+        try:
+            store = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            store = {}
+
+    store[provider_id] = {
+        "provider_id": provider_id,
+        "user_id": user_id,
+        "avatar": saved_avatar,
+        "documents": saved_docs,
+        "payload": payload,
+    }
+    DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+    DATA_FILE.write_text(json.dumps(store, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 async def seed_database():
@@ -149,6 +211,7 @@ async def seed_database():
                 phone_number="+919876500001",
                 role=UserRole.CUSTOMER,
                 is_active=True,
+                is_premium=True,
             ),
             User(
                 id=uuid.uuid4(),
@@ -167,6 +230,7 @@ async def seed_database():
                 phone_number="+919876500003",
                 role=UserRole.CUSTOMER,
                 is_active=True,
+                is_premium=True,
             ),
             User(
                 id=uuid.uuid4(),
@@ -203,6 +267,7 @@ async def seed_database():
                 phone_number="+919876500007",
                 role=UserRole.CUSTOMER,
                 is_active=True,
+                is_premium=True,
             ),
             User(
                 id=uuid.uuid4(),
@@ -250,6 +315,7 @@ async def seed_database():
                 phone_number="+919876600001",
                 role=UserRole.PROVIDER,
                 is_active=True,
+                is_premium=True,
             ),
             User(
                 id=uuid.uuid4(),
@@ -268,6 +334,7 @@ async def seed_database():
                 phone_number="+919876600003",
                 role=UserRole.PROVIDER,
                 is_active=True,
+                is_premium=True,
             ),
             User(
                 id=uuid.uuid4(),
@@ -2034,5 +2101,678 @@ def print_credentials():
     print("\n" + "=" * 60)
 
 
+
+PROVIDER_AVATARS = [
+    'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1607990281513-2c110a25bd8c?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1614289371518-722f2615943d?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face',
+]
+
+CUSTOMER_AVATARS = [
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&h=200&fit=crop&crop=face',
+]
+
+REVIEW_COMMENTS = [
+    "Excellent service! Very professional and punctual. Highly recommend.",
+    "Great experience. The provider was knowledgeable and helpful.",
+    "Very satisfied with the consultation. Will book again.",
+    "Professional approach and clear communication throughout.",
+    "Good service but had to wait a bit. Overall positive experience.",
+    "Outstanding! Exceeded my expectations in every way.",
+    "Thorough and detailed consultation. Very impressed.",
+    "Friendly and professional. Made me feel comfortable.",
+    "Excellent value for money. Very knowledgeable provider.",
+    "Quick and efficient service. No unnecessary delays.",
+    "Very patient and explained everything clearly.",
+    "Top-notch service. Would definitely recommend to friends.",
+    "Prompt, professional, and courteous. Five stars!",
+    "Really helpful and went above and beyond expectations.",
+    "Smooth booking process and great service delivery.",
+    "Knowledgeable and experienced. Solved my problem quickly.",
+    "Very attentive to details. Great follow-up as well.",
+    "Wonderful experience from start to finish.",
+    "Reliable and trustworthy. Will be a regular customer.",
+    "Impressive expertise. Clearly passionate about their work.",
+]
+
+CANCELLATION_REASONS = [
+    "Schedule conflict",
+    "Emergency came up",
+    "Found another provider",
+    "Feeling unwell",
+    "Travel plans changed",
+    "Work meeting conflict",
+]
+
+
+async def seed_more_data():
+    """Add significantly more data to the existing database."""
+    print("Adding more data to the database...")
+
+    async with async_session_maker() as db:
+        # Get existing data
+        providers_result = await db.execute(select(ServiceProvider))
+        providers = providers_result.scalars().all()
+
+        customers_result = await db.execute(
+            select(User).where(User.role == UserRole.CUSTOMER)
+        )
+        customers = customers_result.scalars().all()
+
+        if not providers or not customers:
+            print("ERROR: No existing providers or customers found. Run seed.py first.")
+            return
+
+        print(f"  Found {len(providers)} providers and {len(customers)} customers")
+
+        # ============================================================
+        # 1. Set avatar URLs for ALL provider users
+        # ============================================================
+        provider_user_ids = [p.user_id for p in providers]
+        for i, user_id in enumerate(provider_user_ids):
+            avatar_url = PROVIDER_AVATARS[i % len(PROVIDER_AVATARS)]
+            await db.execute(
+                update(User).where(User.id == user_id).values(avatar_url=avatar_url)
+            )
+        print(f"  ✓ Set avatar URLs for {len(provider_user_ids)} provider users")
+
+        # Set avatar URLs for some customers too
+        for i, customer in enumerate(customers[:len(CUSTOMER_AVATARS)]):
+            await db.execute(
+                update(User).where(User.id == customer.id).values(
+                    avatar_url=CUSTOMER_AVATARS[i % len(CUSTOMER_AVATARS)]
+                )
+            )
+        print(f"  ✓ Set avatar URLs for {min(len(customers), len(CUSTOMER_AVATARS))} customers")
+
+        # ============================================================
+        # 2. Create 50 more customer users
+        # ============================================================
+        new_customer_names = [
+            "Aditya Sharma", "Pooja Gupta", "Rahul Verma", "Neha Singh",
+            "Karthik Rajan", "Divya Nair", "Suresh Kumar", "Meghna Patel",
+            "Varun Reddy", "Isha Malhotra", "Nitin Joshi", "Swati Desai",
+            "Akash Mehta", "Riya Kapoor", "Gaurav Sinha", "Pallavi Iyer",
+            "Mohit Agarwal", "Shruti Bose", "Rajat Khanna", "Anita Rao",
+            "Vishal Tiwari", "Nandini Shah", "Saurabh Mishra", "Priyanka Das",
+            "Abhishek Jain", "Kavya Menon", "Tarun Saxena", "Simran Kaur",
+            "Harsh Pandey", "Anjali Thakur", "Deepak Yadav", "Ritika Arora",
+            "Manish Chauhan", "Sonali Bhatt", "Pankaj Dubey", "Komal Sethi",
+            "Ashish Rawat", "Tanuja Pillai", "Vivek Bansal", "Madhuri Kulkarni",
+            "Sandeep Gill", "Bhavna Chopra", "Rakesh Sood", "Jyoti Fernandes",
+            "Alok Bhatia", "Namrata Hegde", "Tushar Wagh", "Aparna Nambiar",
+            "Hemant Grover", "Shilpa Tandon",
+        ]
+
+        new_customers = []
+        for i, name in enumerate(new_customer_names):
+            email_slug = name.lower().replace(" ", ".").replace(".", ".", 1)
+            customer = User(
+                id=uuid.uuid4(),
+                email=f"{email_slug}.{i}@customers.appointease.test",
+                password_hash=hash_password("password123"),
+                full_name=name,
+                phone_number=f"+91987800{i:04d}",
+                role=UserRole.CUSTOMER,
+                is_active=True,
+                avatar_url=CUSTOMER_AVATARS[i % len(CUSTOMER_AVATARS)] if i < 20 else None,
+            )
+            new_customers.append(customer)
+            db.add(customer)
+
+        await db.flush()
+        all_customers = customers + new_customers
+        print(f"  ✓ Created {len(new_customers)} new customers (total: {len(all_customers)})")
+
+        # ============================================================
+        # 3. Create ~700 more appointments (spread across providers)
+        # ============================================================
+        today = date.today()
+        statuses = [
+            AppointmentStatus.COMPLETED,
+            AppointmentStatus.COMPLETED,
+            AppointmentStatus.COMPLETED,
+            AppointmentStatus.CONFIRMED,
+            AppointmentStatus.CONFIRMED,
+            AppointmentStatus.PENDING,
+            AppointmentStatus.CANCELLED,
+        ]
+        time_slots = [
+            time(9, 0), time(9, 30), time(10, 0), time(10, 30),
+            time(11, 0), time(11, 30), time(12, 0), time(14, 0),
+            time(14, 30), time(15, 0), time(15, 30), time(16, 0),
+            time(16, 30), time(17, 0), time(17, 30), time(18, 0),
+        ]
+
+        new_appointments = []
+        for i in range(700):
+            provider = providers[i % len(providers)]
+            customer = all_customers[i % len(all_customers)]
+
+            # Spread appointments over last 90 days and next 30 days
+            day_offset = (i * 7 + i % 13) % 120 - 90
+            appt_date = today + timedelta(days=day_offset)
+
+            # Skip if customer is the provider's user
+            if customer.id == provider.user_id:
+                continue
+
+            slot = time_slots[i % len(time_slots)]
+            end_slot = time(slot.hour, slot.minute + 30) if slot.minute == 0 else time(slot.hour + 1, 0)
+
+            status = statuses[i % len(statuses)]
+            # Future appointments should be pending or confirmed
+            if day_offset > 0 and status in [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED]:
+                status = AppointmentStatus.CONFIRMED
+
+            cancellation_reason = None
+            if status == AppointmentStatus.CANCELLED:
+                cancellation_reason = CANCELLATION_REASONS[i % len(CANCELLATION_REASONS)]
+
+            appt = Appointment(
+                id=uuid.uuid4(),
+                customer_id=customer.id,
+                provider_id=provider.id,
+                appointment_date=appt_date,
+                start_time=slot,
+                end_time=end_slot,
+                status=status,
+                notes=f"Appointment for {provider.specialization}" if i % 3 == 0 else None,
+                cancellation_reason=cancellation_reason,
+                created_at=datetime.now(timezone.utc) - timedelta(days=max(0, -day_offset + 5)),
+            )
+            new_appointments.append(appt)
+            db.add(appt)
+
+        await db.flush()
+        print(f"  ✓ Created {len(new_appointments)} new appointments")
+
+        # ============================================================
+        # 4. Create ~350 more reviews
+        # ============================================================
+        completed_appts = [a for a in new_appointments if a.status == AppointmentStatus.COMPLETED]
+        new_reviews = []
+        for i, appt in enumerate(completed_appts[:350]):
+            rating = [4.0, 4.5, 5.0, 5.0, 4.0, 3.5, 5.0, 4.5, 4.0, 5.0][i % 10]
+            review = Review(
+                id=uuid.uuid4(),
+                appointment_id=appt.id,
+                customer_id=appt.customer_id,
+                provider_id=appt.provider_id,
+                rating=rating,
+                comment=REVIEW_COMMENTS[i % len(REVIEW_COMMENTS)],
+                created_at=datetime.now(timezone.utc) - timedelta(days=max(0, 90 - i)),
+            )
+            new_reviews.append(review)
+            db.add(review)
+
+        await db.flush()
+        print(f"  ✓ Created {len(new_reviews)} new reviews")
+
+        # ============================================================
+        # 5. Update provider ratings based on actual reviews
+        # ============================================================
+        for provider in providers:
+            result = await db.execute(
+                select(func.avg(Review.rating), func.count(Review.id)).where(
+                    Review.provider_id == provider.id
+                )
+            )
+            row = result.one()
+            avg_rating = float(row[0]) if row[0] else provider.rating
+            total_reviews = row[1] or 0
+            await db.execute(
+                update(ServiceProvider)
+                .where(ServiceProvider.id == provider.id)
+                .values(rating=round(avg_rating, 1), total_reviews=total_reviews)
+            )
+        print(f"  ✓ Updated ratings for {len(providers)} providers")
+
+        # ============================================================
+        # 6. Create invoices for completed appointments
+        # ============================================================
+        new_invoices = []
+        for i, appt in enumerate(completed_appts[:300]):
+            # Get provider hourly rate
+            provider = next((p for p in providers if p.id == appt.provider_id), None)
+            if not provider or not provider.hourly_rate:
+                continue
+
+            amount = provider.hourly_rate * 0.5  # 30-min slot
+            gst_rate = 18.0
+            gst_amount = amount * gst_rate / 100
+            total = amount + gst_amount
+
+            invoice = Invoice(
+                id=uuid.uuid4(),
+                appointment_id=appt.id,
+                customer_id=appt.customer_id,
+                provider_id=appt.provider_id,
+                invoice_number=f"INV-{2024}{i+100:05d}",
+                amount=amount,
+                gst_rate=gst_rate,
+                gst_amount=round(gst_amount, 2),
+                total_amount=round(total, 2),
+                status="paid" if i % 4 != 0 else "generated",
+                generated_at=datetime.now(timezone.utc) - timedelta(days=max(0, 90 - i)),
+            )
+            new_invoices.append(invoice)
+            db.add(invoice)
+
+        await db.flush()
+        print(f"  ✓ Created {len(new_invoices)} invoices")
+
+        # ============================================================
+        # 7. Create loyalty accounts for customers
+        # ============================================================
+        existing_loyalty = await db.execute(select(LoyaltyAccount.user_id))
+        existing_loyalty_ids = {row[0] for row in existing_loyalty.all()}
+
+        new_loyalty = []
+        tiers = ["bronze", "bronze", "silver", "silver", "gold", "platinum"]
+        for i, customer in enumerate(all_customers):
+            if customer.id in existing_loyalty_ids:
+                continue
+            points = (i * 47 + 100) % 2000
+            tier = tiers[min(points // 400, len(tiers) - 1)]
+            loyalty = LoyaltyAccount(
+                id=uuid.uuid4(),
+                user_id=customer.id,
+                points=points,
+                tier=tier,
+            )
+            new_loyalty.append(loyalty)
+            db.add(loyalty)
+
+        await db.flush()
+        print(f"  ✓ Created {len(new_loyalty)} loyalty accounts")
+
+        # ============================================================
+        # 8. Create notifications
+        # ============================================================
+        notification_types = [
+            (NotificationType.APPOINTMENT_BOOKED, "New Appointment", "You have a new appointment booking."),
+            (NotificationType.APPOINTMENT_CONFIRMED, "Appointment Confirmed", "Your appointment has been confirmed."),
+            (NotificationType.APPOINTMENT_COMPLETED, "Appointment Completed", "Your appointment has been completed. Please leave a review!"),
+            (NotificationType.SYSTEM, "Welcome!", "Welcome to AppointEase. Start booking appointments today."),
+        ]
+
+        new_notifications = []
+        for i, customer in enumerate(all_customers[:30]):
+            ntype, title, message = notification_types[i % len(notification_types)]
+            notif = Notification(
+                id=uuid.uuid4(),
+                user_id=customer.id,
+                type=ntype,
+                title=title,
+                message=message,
+                is_read=i % 3 == 0,
+                created_at=datetime.now(timezone.utc) - timedelta(hours=i * 2),
+            )
+            new_notifications.append(notif)
+            db.add(notif)
+
+        await db.flush()
+        print(f"  ✓ Created {len(new_notifications)} notifications")
+
+        # ============================================================
+        # 9. Seed pending / approved / rejected provider applications
+        # ============================================================
+        categories_result = await db.execute(select(ServiceCategory))
+        categories_by_name = {category.name: category for category in categories_result.scalars().all()}
+        existing_email_rows = await db.execute(select(User.email))
+        existing_emails = {row[0] for row in existing_email_rows.all()}
+
+        application_seeds = [
+            {
+                "email": "ananya.roy@appointease.test",
+                "full_name": "Ananya Roy",
+                "phone_number": "+919879100001",
+                "category_name": "Healthcare",
+                "specialization": "Physiotherapy & Rehabilitation",
+                "experience_years": 7,
+                "location": "Pune",
+                "area": "Baner",
+                "pincode": "411045",
+                "hourly_rate": 1200.0,
+                "is_verified": False,
+                "is_active": True,
+                "profile_description": "Certified physiotherapist focused on mobility recovery, posture correction, and post-surgery rehabilitation.",
+                "avatar_svg": """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f6d365"/>
+      <stop offset="100%" stop-color="#fda085"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="128" fill="url(#g)"/>
+  <circle cx="128" cy="122" r="58" fill="#fff3e0"/>
+  <circle cx="106" cy="114" r="10" fill="#1a237e"/>
+  <circle cx="150" cy="114" r="10" fill="#1a237e"/>
+  <path d="M112 148 Q128 164 144 148" fill="none" stroke="#bf360c" stroke-width="6" stroke-linecap="round"/>
+  <text x="128" y="205" text-anchor="middle" fill="#3e2723" font-family="Arial, sans-serif" font-size="42" font-weight="700">AR</text>
+</svg>
+""".strip(),
+                "documents": [
+                    ("physio-license.txt", "text/plain", "Maharashtra Physiotherapy Council registration. License No: MPC-74219. Valid through 2028."),
+                    ("experience-letter.txt", "text/plain", "Experience letter from City Rehab Clinic confirming 7 years of full-time rehabilitation practice."),
+                ],
+            },
+            {
+                "email": "vikas.sharma@appointease.test",
+                "full_name": "Vikas Sharma",
+                "phone_number": "+919879100002",
+                "category_name": "Legal Services",
+                "specialization": "Family Law & Mediation",
+                "experience_years": 11,
+                "location": "Delhi",
+                "area": "Dwarka",
+                "pincode": "110075",
+                "hourly_rate": 4200.0,
+                "is_verified": True,
+                "is_active": True,
+                "profile_description": "Mediator and family law consultant handling custody, divorce, maintenance, and pre-marital agreements.",
+                "avatar_svg": """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#84fab0"/>
+      <stop offset="100%" stop-color="#8fd3f4"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="128" fill="url(#g)"/>
+  <circle cx="128" cy="122" r="58" fill="#e8f5e9"/>
+  <circle cx="108" cy="112" r="10" fill="#1a237e"/>
+  <circle cx="148" cy="112" r="10" fill="#1a237e"/>
+  <path d="M112 148 Q128 160 144 148" fill="none" stroke="#2e7d32" stroke-width="6" stroke-linecap="round"/>
+  <text x="128" y="205" text-anchor="middle" fill="#1b5e20" font-family="Arial, sans-serif" font-size="42" font-weight="700">VS</text>
+</svg>
+""".strip(),
+                "documents": [
+                    ("bar-certificate.txt", "text/plain", "Delhi Bar Council registration. Enrollment No: DBC-118203. Family mediation certified."),
+                    ("case-portfolio.txt", "text/plain", "Selected matters: custody mediation, divorce settlements, and property partition advisory."),
+                ],
+            },
+            {
+                "email": "meera.khan@appointease.test",
+                "full_name": "Meera Khan",
+                "phone_number": "+919879100003",
+                "category_name": "Fitness Training",
+                "specialization": "Prenatal Yoga & Recovery",
+                "experience_years": 6,
+                "location": "Bengaluru",
+                "area": "Indiranagar",
+                "pincode": "560038",
+                "hourly_rate": 1800.0,
+                "is_verified": False,
+                "is_active": False,
+                "profile_description": "Specialises in prenatal yoga, postnatal recovery, and gentle mobility-focused routines for new mothers.",
+                "avatar_svg": """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a18cd1"/>
+      <stop offset="100%" stop-color="#fbc2eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="128" fill="url(#g)"/>
+  <circle cx="128" cy="122" r="58" fill="#f3e5f5"/>
+  <circle cx="108" cy="112" r="10" fill="#1a237e"/>
+  <circle cx="148" cy="112" r="10" fill="#1a237e"/>
+  <path d="M112 148 Q128 165 144 148" fill="none" stroke="#6a1b9a" stroke-width="6" stroke-linecap="round"/>
+  <text x="128" y="205" text-anchor="middle" fill="#4a148c" font-family="Arial, sans-serif" font-size="42" font-weight="700">MK</text>
+</svg>
+""".strip(),
+                "documents": [
+                    ("yoga-certification.txt", "text/plain", "Yoga Alliance certification, prenatal specialization, and birth-prep workshop completion."),
+                    ("identity-proof.txt", "text/plain", "Government-issued identity verification and address proof for onboarding."),
+                ],
+            },
+        ]
+
+        created_applications = 0
+        for seed_spec in application_seeds:
+            if seed_spec["email"] in existing_emails:
+                continue
+
+            category = categories_by_name.get(seed_spec["category_name"])
+            if not category:
+                continue
+
+            user = User(
+                id=uuid.uuid4(),
+                email=seed_spec["email"],
+                password_hash=hash_password("password123"),
+                full_name=seed_spec["full_name"],
+                phone_number=seed_spec["phone_number"],
+                role=UserRole.PROVIDER,
+                is_active=seed_spec["is_active"],
+            )
+            provider = ServiceProvider(
+                id=uuid.uuid4(),
+                user_id=user.id,
+                specialization=seed_spec["specialization"],
+                category_id=category.id,
+                experience_years=seed_spec["experience_years"],
+                location=seed_spec["location"],
+                area=seed_spec["area"],
+                pincode=seed_spec["pincode"],
+                profile_description=seed_spec["profile_description"],
+                hourly_rate=seed_spec["hourly_rate"],
+                rating=0.0,
+                total_reviews=0,
+                is_verified=seed_spec["is_verified"],
+            )
+            db.add(user)
+            db.add(provider)
+            await db.flush()
+
+            _write_provider_application_record(
+                provider_id=str(provider.id),
+                user_id=str(user.id),
+                payload={
+                    "specialization": seed_spec["specialization"],
+                    "category_id": str(category.id),
+                    "experience_years": seed_spec["experience_years"],
+                    "location": seed_spec["location"],
+                    "area": seed_spec["area"],
+                    "pincode": seed_spec["pincode"],
+                    "profile_description": seed_spec["profile_description"],
+                    "hourly_rate": seed_spec["hourly_rate"],
+                },
+                avatar_svg=seed_spec["avatar_svg"],
+                documents=seed_spec["documents"],
+            )
+            created_applications += 1
+            existing_emails.add(seed_spec["email"])
+
+        print(f"  ✓ Seeded {created_applications} provider onboarding applications")
+
+        # Commit all changes
+        await db.commit()
+        print("\n✅ Successfully added more data to the database!")
+        print(f"   - {len(new_customers)} new customers")
+        print(f"   - {len(new_appointments)} new appointments")
+        print(f"   - {len(new_reviews)} new reviews")
+        print(f"   - {len(new_invoices)} new invoices")
+        print(f"   - {len(new_loyalty)} loyalty accounts")
+        print(f"   - Avatar URLs set for all providers")
+
+
+
+AI_SUMMARIES = [
+    "Session with the provider covered the primary concern thoroughly; follow-up recommended in 2 weeks to assess progress.",
+    "Comprehensive consultation completed. Provider advised lifestyle adjustments and a follow-up session in 4 weeks.",
+    "Treatment plan discussed and initiated. Patient advised to monitor symptoms and return if condition worsens.",
+    "Productive session — key topics addressed. Provider recommends booking a follow-up within 10–14 days.",
+    "Initial assessment completed successfully. Next steps include home exercises and a review appointment next month.",
+]
+
+
+async def seed_ai_data():
+    print("Seeding AI-specific data...")
+    await create_tables()
+
+    async with async_session_maker() as db:
+
+        # ── 1. Set ai_summary on completed appointments ───────────────────────
+        result = await db.execute(
+            select(Appointment)
+            .where(
+                Appointment.status == AppointmentStatus.COMPLETED,
+                Appointment.ai_summary.is_(None),
+            )
+            .limit(30)
+        )
+        completed = result.scalars().all()
+        for i, appt in enumerate(completed):
+            appt.ai_summary = AI_SUMMARIES[i % len(AI_SUMMARIES)]
+        await db.flush()
+        print(f"  ✓ Set ai_summary on {len(completed)} completed appointments")
+
+        # ── 2. Create high-cancellation users for fraud detection ─────────────
+        existing = await db.execute(select(User).where(User.email == "fraud.test1@appointease.test"))
+        if not existing.scalar_one_or_none():
+            fraud_users = []
+            for i in range(3):
+                fu = User(
+                    id=uuid.uuid4(),
+                    email=f"fraud.test{i+1}@appointease.test",
+                    password_hash=hash_password("password123"),
+                    full_name=f"Suspicious User {i+1}",
+                    phone_number=f"+9199990000{i:02d}",
+                    role=UserRole.CUSTOMER,
+                    is_active=True,
+                    created_at=datetime.now(timezone.utc) - timedelta(days=90),
+                )
+                fraud_users.append(fu)
+                db.add(fu)
+            await db.flush()
+
+            # Get first available provider
+            prov_r = await db.execute(select(ServiceProvider).limit(1))
+            provider = prov_r.scalar_one_or_none()
+            if provider:
+                today = date.today()
+                for fu in fraud_users:
+                    # 8 appointments, 7 cancelled = 87.5% cancellation rate
+                    for j in range(8):
+                        status = AppointmentStatus.CANCELLED if j < 7 else AppointmentStatus.COMPLETED
+                        appt = Appointment(
+                            id=uuid.uuid4(),
+                            customer_id=fu.id,
+                            provider_id=provider.id,
+                            appointment_date=today - timedelta(days=j * 5 + 10),
+                            start_time=time(10, 0),
+                            end_time=time(11, 0),
+                            status=status,
+                            cancellation_reason="Changed my mind" if status == AppointmentStatus.CANCELLED else None,
+                            created_at=datetime.now(timezone.utc) - timedelta(days=j * 5 + 15),
+                        )
+                        db.add(appt)
+            await db.flush()
+            print(f"  ✓ Created {len(fraud_users)} high-cancellation users for fraud detection")
+
+        # ── 3. Create churn-risk users (registered but inactive 60+ days) ─────
+        existing_churn = await db.execute(select(User).where(User.email == "churn.risk1@appointease.test"))
+        if not existing_churn.scalar_one_or_none():
+            for i in range(4):
+                cu = User(
+                    id=uuid.uuid4(),
+                    email=f"churn.risk{i+1}@appointease.test",
+                    password_hash=hash_password("password123"),
+                    full_name=f"Inactive Customer {i+1}",
+                    phone_number=f"+9188880000{i:02d}",
+                    role=UserRole.CUSTOMER,
+                    is_active=True,
+                    created_at=datetime.now(timezone.utc) - timedelta(days=90 + i * 15),
+                )
+                db.add(cu)
+            await db.flush()
+            print("  ✓ Created 4 churn-risk users (no bookings after 60+ days)")
+
+        # ── 4. Bulk invoices to make revenue forecast meaningful ──────────────
+        inv_r = await db.execute(select(Invoice).limit(1))
+        has_invoices = inv_r.scalar_one_or_none()
+        if not has_invoices:
+            prov_r = await db.execute(select(ServiceProvider).limit(1))
+            provider = prov_r.scalar_one_or_none()
+            cust_r = await db.execute(select(User).where(User.role == UserRole.CUSTOMER).limit(1))
+            customer = cust_r.scalar_one_or_none()
+            if provider and customer:
+                for w in range(12):
+                    for d_off in range(3):
+                        amount = float(1500 + (w * 200 + d_off * 300) % 4000)
+                        gst = round(amount * 0.18, 2)
+                        appt = Appointment(
+                            id=uuid.uuid4(),
+                            customer_id=customer.id,
+                            provider_id=provider.id,
+                            appointment_date=date.today() - timedelta(weeks=w, days=d_off),
+                            start_time=time(10, 0),
+                            end_time=time(11, 0),
+                            status=AppointmentStatus.COMPLETED,
+                        )
+                        db.add(appt)
+                        await db.flush()
+                        inv = Invoice(
+                            id=uuid.uuid4(),
+                            appointment_id=appt.id,
+                            customer_id=customer.id,
+                            provider_id=provider.id,
+                            invoice_number=f"INV-AI-{w:03d}{d_off}",
+                            amount=amount,
+                            gst_rate=18.0,
+                            gst_amount=gst,
+                            total_amount=round(amount + gst, 2),
+                            status="paid",
+                            generated_at=datetime.now(timezone.utc) - timedelta(weeks=w, days=d_off),
+                        )
+                        db.add(inv)
+                await db.flush()
+                print("  ✓ Created historical invoices for revenue forecasting")
+
+        # ── 5. Ensure high-demand category data for supply-demand gaps ────────
+        # The existing appointments + providers already give ratio data.
+        # Just print a note.
+        result = await db.execute(select(ServiceProvider).limit(5))
+        sample_providers = result.scalars().all()
+        print(f"  ✓ {len(sample_providers)} providers available for supply-demand analysis")
+
+        await db.commit()
+        print("\n✅ AI seed data complete!")
+        print("   • ai_summary set on completed appointments → Appointment Detail shows AI summary")
+        print("   • Fraud detection users → Admin Dashboard fraud alerts populated")
+        print("   • Churn risk users → Admin Dashboard churn panel populated")
+        print("   • Historical invoices → Revenue forecast chart populated")
+        print("   • All AI endpoints (#9–#55) now have seed data to display")
+
+
+
+
+async def main():
+    await seed_database()
+    await seed_more_data()
+    await seed_ai_data()
+
 if __name__ == "__main__":
-    asyncio.run(seed_database())
+    asyncio.run(main())

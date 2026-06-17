@@ -4,7 +4,7 @@ from typing import Optional
 from uuid import UUID
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,6 +34,8 @@ async def reschedule_suggestions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if not current_user.is_premium:
+        raise HTTPException(status_code=403, detail="Smart reschedule suggestions require a Premium subscription.")
     return await ai.get_reschedule_suggestions(db, appointment_id, current_user.id)
 
 
@@ -53,6 +55,8 @@ async def next_booking_prediction(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if not current_user.is_premium:
+        raise HTTPException(status_code=403, detail="Booking predictions require a Premium subscription.")
     return await ai.predict_next_booking(db, current_user.id)
 
 
@@ -119,6 +123,8 @@ async def fraud_alerts(
     admin: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if not admin.is_premium and not admin.is_super_admin:
+        raise HTTPException(status_code=403, detail="Fraud alerts require a Premium subscription.")
     return await ai.get_fraud_alerts(db)
 
 
@@ -128,6 +134,8 @@ async def revenue_forecast(
     admin: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if not admin.is_premium and not admin.is_super_admin:
+        raise HTTPException(status_code=403, detail="Revenue forecasting requires a Premium subscription.")
     return await ai.forecast_revenue(db)
 
 
@@ -137,6 +145,8 @@ async def churn_risk(
     admin: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if not admin.is_premium and not admin.is_super_admin:
+        raise HTTPException(status_code=403, detail="Churn risk analysis requires a Premium subscription.")
     return await ai.get_churn_risk_users(db)
 
 

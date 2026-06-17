@@ -33,6 +33,8 @@ from app.routers import (
     reviews,
     users,
     waitlist,
+    premium,
+    integrations,
 )
 
 # Configure logging
@@ -90,6 +92,8 @@ app.include_router(ai_chat.router)
 app.include_router(ai_features.router)
 app.include_router(payments.router)
 app.include_router(reminders.router)
+app.include_router(premium.router)
+app.include_router(integrations.router)
 
 
 lifespan_started = False
@@ -121,17 +125,18 @@ async def _run_ai_seed():
             logger.info("AI seed already applied — skipping.")
             return
         logger.info("Running AI seed data...")
-        import importlib.util, os, sys
-        seed_path = os.path.join(os.path.dirname(__file__), "..", "seed_ai.py")
+        import importlib.util, os
+        seed_path = os.path.join(os.path.dirname(__file__), "..", "seed.py")
         seed_path = os.path.abspath(seed_path)
         if os.path.exists(seed_path):
-            spec = importlib.util.spec_from_file_location("seed_ai", seed_path)
+            spec = importlib.util.spec_from_file_location("seed", seed_path)
             module = importlib.util.module_from_spec(spec)
+            assert spec.loader is not None
             spec.loader.exec_module(module)
             await module.seed_ai_data()
             logger.info("AI seed data applied successfully.")
         else:
-            logger.warning("seed_ai.py not found — skipping AI seed.")
+            logger.warning("seed.py not found — skipping AI seed.")
     except Exception as e:
         logger.warning(f"AI seed skipped due to error: {e}")
 
@@ -161,4 +166,3 @@ async def health_check():
 async def ping():
     """Lightweight keep-alive endpoint to prevent cold starts."""
     return {"pong": True}
-

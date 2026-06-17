@@ -14,6 +14,27 @@ import { debounce, formatCurrency } from '@/utils';
 import { getProviderImage } from '@/utils/providerImages';
 import type { Provider } from '@/types';
 
+interface PlatformSuggestion {
+  label: string;
+  url: string;
+}
+
+const PLATFORM_LINKS = [
+  { label: 'My Appointments', url: '/appointments', keywords: ['appointment', 'booking', 'schedule', 'calendar'] },
+  { label: 'Dashboard', url: '/dashboard', keywords: ['dashboard', 'home', 'overview'] },
+  { label: 'Profile Settings', url: '/profile', keywords: ['profile', 'account', 'settings'] },
+  { label: 'My Wallet', url: '/wallet', keywords: ['wallet', 'balance', 'money', 'payment'] },
+  { label: 'Favorites', url: '/favorites', keywords: ['favorite', 'saved', 'bookmark'] },
+];
+
+function getPlatformSuggestions(query: string): PlatformSuggestion[] {
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+  return PLATFORM_LINKS
+    .filter(link => link.keywords.some(kw => kw.includes(q) || q.includes(kw)))
+    .map(({ label, url }) => ({ label, url }));
+}
+
 interface AdvancedSearchProps {
   onSearch?: (query: string) => void;
   className?: string;
@@ -61,6 +82,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<Provider[]>([]);
+  const [platformSuggestions, setPlatformSuggestions] = useState<PlatformSuggestion[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>(getRecentSearches());
 
@@ -76,8 +98,10 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
     debounce(async (searchQuery: string) => {
       if (searchQuery.length < 2) {
         setSuggestions([]);
+        setPlatformSuggestions([]);
         return;
       }
+      setPlatformSuggestions(getPlatformSuggestions(searchQuery));
       setIsLoadingSuggestions(true);
       try {
         const response = await providerService.getProviders({
@@ -244,6 +268,31 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
               </div>
             )}
 
+            {/* Platform Suggestions */}
+            {!isLoadingSuggestions && platformSuggestions.length > 0 && (
+              <div className="p-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="block px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Quick Links
+                </span>
+                {platformSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.url}
+                    onClick={() => {
+                      setIsFocused(false);
+                      navigate(suggestion.url);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    role="option"
+                  >
+                    <TrendingUp className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {suggestion.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Suggestions */}
             {!isLoadingSuggestions && suggestions.length > 0 && (
               <div className="p-2">
@@ -287,7 +336,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
             )}
 
             {/* No results */}
-            {!isLoadingSuggestions && query.length >= 2 && suggestions.length === 0 && (
+            {!isLoadingSuggestions && query.length >= 2 && suggestions.length === 0 && platformSuggestions.length === 0 && (
               <div className="p-6 text-center">
                 <TrendingUp className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">

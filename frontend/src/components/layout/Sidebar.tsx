@@ -20,6 +20,7 @@ import {
   CalendarPlus,
   BarChart3,
   ShieldCheck,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { Logo } from '@/components/ui/Logo';
@@ -87,6 +88,7 @@ const providerSections: NavSection[] = [
     heading: 'Business',
     items: [
       { label: 'Invoices', path: '/invoices', icon: <FileText className="w-5 h-5" /> },
+      { label: 'Integrations', path: '/provider/integrations', icon: <LinkIcon className="w-5 h-5" /> },
     ],
   },
   {

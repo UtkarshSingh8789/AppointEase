@@ -180,90 +180,94 @@ async def google_oauth_callback(
 ):
     """Handle Google OAuth callback — exchange code for tokens and create/login user."""
     import httpx
-
-    redirect_uri = f"{settings.BACKEND_URL}/api/auth/google/callback"
-    frontend_url = settings.FRONTEND_URL
-
-    # Exchange code for tokens
-    async with httpx.AsyncClient() as client:
-        token_response = await client.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "code": code,
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code",
-            },
-        )
-
-    if token_response.status_code != 200:
-        return RedirectResponse(url=f"{frontend_url}/login?error=oauth_failed", status_code=302)
-
-    tokens = token_response.json()
-    access_token = tokens.get("access_token")
-
-    # Get user info
-    async with httpx.AsyncClient() as client:
-        user_info_response = await client.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-
-    if user_info_response.status_code != 200:
-        return RedirectResponse(url=f"{frontend_url}/login?error=oauth_failed", status_code=302)
-
-    user_info = user_info_response.json()
-    email = user_info.get("email")
-    if not email:
-        return RedirectResponse(url=f"{frontend_url}/login?error=no_email", status_code=302)
-
-    name = user_info.get("name") or email.split("@")[0]
-
-    # Find or create user
     from sqlalchemy import select
     from app.models.user import UserRole
     from app.core.security import hash_password, create_access_token, create_refresh_token
     import uuid
 
-    result = await db.execute(select(User).where(User.email == email))
-    user = result.scalar_one_or_none()
+    redirect_uri = f"{settings.BACKEND_URL}/api/auth/google/callback"
+    frontend_url = settings.FRONTEND_URL
 
-    if not user:
-        # Create new user
-        user = User(
-            id=uuid.uuid4(),
-            email=email,
-            password_hash=hash_password(uuid.uuid4().hex),  # Random password for OAuth users
-            full_name=name,
-            role=UserRole.CUSTOMER,
-            is_active=True,
-            avatar_url=user_info.get("picture"),
+    try:
+        # Exchange code for tokens
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+            )
+
+        if token_response.status_code != 200:
+            return RedirectResponse(url=f"{frontend_url}/login?error=oauth_failed", status_code=302)
+
+        tokens = token_response.json()
+        access_token = tokens.get("access_token")
+
+        # Get user info
+        async with httpx.AsyncClient() as client:
+            user_info_response = await client.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+
+        if user_info_response.status_code != 200:
+            return RedirectResponse(url=f"{frontend_url}/login?error=oauth_failed", status_code=302)
+
+        user_info = user_info_response.json()
+        email = user_info.get("email")
+        if not email:
+            return RedirectResponse(url=f"{frontend_url}/login?error=no_email", status_code=302)
+
+        name = user_info.get("name") or email.split("@")[0]
+
+        # Find or create user
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            # Create new user
+            user = User(
+                id=uuid.uuid4(),
+                email=email,
+                password_hash=hash_password(uuid.uuid4().hex),  # Random password for OAuth users
+                full_name=name,
+                role=UserRole.CUSTOMER,
+                is_active=True,
+                avatar_url=user_info.get("picture"),
+            )
+            db.add(user)
+            await db.flush()
+            await db.refresh(user)
+
+        # Generate tokens
+        token_data = {"sub": str(user.id), "role": user.role.value}
+        access_token = create_access_token(token_data)
+        refresh_token = create_refresh_token(token_data)
+
+        await db.commit()
+
+        # Redirect to frontend with tokens
+        if user.role == UserRole.PROVIDER:
+            dashboard = "/provider/dashboard"
+        elif user.role == UserRole.ADMIN:
+            dashboard = "/admin/dashboard"
+        else:
+            dashboard = "/dashboard"
+
+        redirect_url = (
+            f"{frontend_url}{dashboard}"
+            f"?access_token={access_token}&refresh_token={refresh_token}"
         )
-        db.add(user)
-        await db.flush()
-        await db.refresh(user)
-
-    # Generate tokens
-    token_data = {"sub": str(user.id), "role": user.role.value}
-    access_token = create_access_token(token_data)
-    refresh_token = create_refresh_token(token_data)
-
-    await db.commit()
-
-    # Redirect to frontend with tokens
-    if user.role == UserRole.PROVIDER:
-        dashboard = "/provider/dashboard"
-    elif user.role == UserRole.ADMIN:
-        dashboard = "/admin/dashboard"
-    else:
-        dashboard = "/dashboard"
-
-    redirect_url = (
-        f"{frontend_url}{dashboard}"
-        f"?access_token={access_token}&refresh_token={refresh_token}"
-    )
-    return RedirectResponse(url=redirect_url, status_code=302)
+        return RedirectResponse(url=redirect_url, status_code=302)
+    except Exception as e:
+        logger.error(f"Google OAuth failed: {str(e)}")
+        await db.rollback()
+        return RedirectResponse(url=f"{frontend_url}/login?error=oauth_failed", status_code=302)
 
 
 @router.get("/microsoft/url", summary="Get Microsoft OAuth URL")
@@ -295,6 +299,10 @@ async def microsoft_oauth_callback(
 ):
     """Handle Microsoft OAuth callback."""
     import httpx
+    from sqlalchemy import select
+    from app.models.user import UserRole
+    from app.core.security import hash_password, create_access_token, create_refresh_token
+    import uuid
 
     client_id = settings.MICROSOFT_CLIENT_ID
     client_secret = settings.MICROSOFT_CLIENT_SECRET
@@ -304,81 +312,81 @@ async def microsoft_oauth_callback(
     if not client_secret:
         return RedirectResponse(url=f"{frontend_url}/login?error=microsoft_not_configured", status_code=302)
 
-    # Exchange code for tokens
-    async with httpx.AsyncClient() as client:
-        token_response = await client.post(
-            "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-            data={
-                "code": code,
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code",
-            },
-        )
+    try:
+        # Exchange code for tokens
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+                data={
+                    "code": code,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+            )
 
-    if token_response.status_code != 200:
-        logger.error(f"Microsoft token exchange failed: {token_response.status_code} - {token_response.text}")
+        if token_response.status_code != 200:
+            logger.error(f"Microsoft token exchange failed: {token_response.status_code} - {token_response.text}")
+            return RedirectResponse(url=f"{frontend_url}/login?error=oauth_failed", status_code=302)
+
+        tokens = token_response.json()
+        access_token = tokens.get("access_token")
+
+        # Get user info from Microsoft Graph
+        async with httpx.AsyncClient() as client:
+            user_info_response = await client.get(
+                "https://graph.microsoft.com/v1.0/me",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+
+        if user_info_response.status_code != 200:
+            return RedirectResponse(url=f"{frontend_url}/login?error=oauth_failed", status_code=302)
+
+        user_info = user_info_response.json()
+        email = user_info.get("mail") or user_info.get("userPrincipalName")
+        name = user_info.get("displayName", email.split("@")[0] if email else "User")
+
+        if not email:
+            return RedirectResponse(url=f"{frontend_url}/login?error=no_email", status_code=302)
+
+        # Find or create user
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            user = User(
+                id=uuid.uuid4(),
+                email=email,
+                password_hash=hash_password(uuid.uuid4().hex),
+                full_name=name,
+                role=UserRole.CUSTOMER,
+                is_active=True,
+            )
+            db.add(user)
+            await db.flush()
+            await db.refresh(user)
+
+        # Generate tokens
+        token_data = {"sub": str(user.id), "role": user.role.value}
+        access_token = create_access_token(token_data)
+        refresh_token = create_refresh_token(token_data)
+
+        await db.commit()
+
+        if user.role == UserRole.PROVIDER:
+            dashboard = "/provider/dashboard"
+        elif user.role == UserRole.ADMIN:
+            dashboard = "/admin/dashboard"
+        else:
+            dashboard = "/dashboard"
+
+        redirect_url = (
+            f"{frontend_url}{dashboard}"
+            f"?access_token={access_token}&refresh_token={refresh_token}"
+        )
+        return RedirectResponse(url=redirect_url, status_code=302)
+    except Exception as e:
+        logger.error(f"Microsoft OAuth failed: {str(e)}")
+        await db.rollback()
         return RedirectResponse(url=f"{frontend_url}/login?error=oauth_failed", status_code=302)
-
-    tokens = token_response.json()
-    access_token = tokens.get("access_token")
-
-    # Get user info from Microsoft Graph
-    async with httpx.AsyncClient() as client:
-        user_info_response = await client.get(
-            "https://graph.microsoft.com/v1.0/me",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-
-    if user_info_response.status_code != 200:
-        return RedirectResponse(url=f"{frontend_url}/login?error=oauth_failed", status_code=302)
-
-    user_info = user_info_response.json()
-    email = user_info.get("mail") or user_info.get("userPrincipalName")
-    name = user_info.get("displayName", email.split("@")[0] if email else "User")
-
-    if not email:
-        return RedirectResponse(url=f"{frontend_url}/login?error=no_email", status_code=302)
-
-    # Find or create user
-    from sqlalchemy import select
-    from app.models.user import UserRole
-    from app.core.security import hash_password, create_access_token, create_refresh_token
-    import uuid
-
-    result = await db.execute(select(User).where(User.email == email))
-    user = result.scalar_one_or_none()
-
-    if not user:
-        user = User(
-            id=uuid.uuid4(),
-            email=email,
-            password_hash=hash_password(uuid.uuid4().hex),
-            full_name=name,
-            role=UserRole.CUSTOMER,
-            is_active=True,
-        )
-        db.add(user)
-        await db.flush()
-        await db.refresh(user)
-
-    # Generate tokens
-    token_data = {"sub": str(user.id), "role": user.role.value}
-    access_token = create_access_token(token_data)
-    refresh_token = create_refresh_token(token_data)
-
-    await db.commit()
-
-    if user.role == UserRole.PROVIDER:
-        dashboard = "/provider/dashboard"
-    elif user.role == UserRole.ADMIN:
-        dashboard = "/admin/dashboard"
-    else:
-        dashboard = "/dashboard"
-
-    redirect_url = (
-        f"{frontend_url}{dashboard}"
-        f"?access_token={access_token}&refresh_token={refresh_token}"
-    )
-    return RedirectResponse(url=redirect_url, status_code=302)

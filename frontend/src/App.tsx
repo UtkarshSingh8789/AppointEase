@@ -1,16 +1,18 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { ProviderApprovalGate } from '@/components/auth/ProviderApprovalGate';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 // Lazy-loaded pages for code splitting
 const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 // Customer pages
 const CustomerDashboard = lazy(() => import('@/pages/customer/CustomerDashboard').then(m => ({ default: m.CustomerDashboard })));
@@ -27,6 +29,7 @@ const Wallet = lazy(() => import('@/pages/customer/Wallet').then(m => ({ default
 const Invoices = lazy(() => import('@/pages/customer/Invoices').then(m => ({ default: m.Invoices })));
 const Settings = lazy(() => import('@/pages/customer/Settings').then(m => ({ default: m.Settings })));
 const Profile = lazy(() => import('@/pages/customer/Profile').then(m => ({ default: m.Profile })));
+const PremiumPage = lazy(() => import('@/pages/PremiumPage').then(m => ({ default: m.PremiumPage })));
 
 // Provider pages
 const ProviderDashboard = lazy(() => import('@/pages/provider/ProviderDashboard').then(m => ({ default: m.ProviderDashboard })));
@@ -37,6 +40,7 @@ const ProviderProfile = lazy(() => import('@/pages/provider/ProviderProfile').th
 const ProviderPublicProfile = lazy(() => import('@/pages/provider/ProviderPublicProfile').then(m => ({ default: m.ProviderPublicProfile })));
 const ProviderOnboardingPage = lazy(() => import('@/pages/provider/ProviderOnboardingPage').then(m => ({ default: m.ProviderOnboardingPage })));
 const ProviderPendingApprovalPage = lazy(() => import('@/pages/provider/ProviderPendingApprovalPage').then(m => ({ default: m.ProviderPendingApprovalPage })));
+const IntegrationsPage = lazy(() => import('@/pages/provider/Integrations').then(m => ({ default: m.IntegrationsPage })));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
@@ -55,9 +59,11 @@ const PageLoader = () => (
 );
 
 const App: React.FC = () => {
-  const { isAuthenticated, isInitialized, initialize } = useAuthStore();
-  const hasOAuthTokens = new URLSearchParams(window.location.search).has('access_token');
-  const [isProcessingOAuth, setIsProcessingOAuth] = React.useState(hasOAuthTokens);
+  const { isInitialized, initialize } = useAuthStore();
+  const navigate = useNavigate();
+  const [isProcessingOAuth, setIsProcessingOAuth] = React.useState(
+    new URLSearchParams(window.location.search).has('access_token')
+  );
 
   useEffect(() => {
     // Keep Render backend warm — ping every 10 min to prevent cold starts
@@ -71,32 +77,52 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Handle OAuth callback — extract tokens from URL params
+    // Timeout to prevent infinite loading if initialize gets stuck
+    const token = localStorage.getItem('access_token');
+    if (!isInitialized && token) {
+      const timer = setTimeout(() => {
+        if (!useAuthStore.getState().isInitialized) {
+          console.warn('Auth initialization timed out, clearing tokens.');
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: false, isInitialized: true });
+          navigate('/login', { replace: true });
+        }
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isInitialized, navigate]);
+
+  useEffect(() => {
+    // Handle OAuth callback — extract tokens from URL params, then initialize
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get('access_token');
     const refreshToken = params.get('refresh_token');
+    const authError = params.get('error');
     let cancelled = false;
 
     const processOAuth = async () => {
       if (accessToken) {
         localStorage.setItem('access_token', accessToken);
         if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
-        // Clean URL
+        // Clean URL immediately — no reload needed
         window.history.replaceState({}, '', window.location.pathname);
-
-        if (!window.sessionStorage.getItem('oauth_reload_complete')) {
-          window.sessionStorage.setItem('oauth_reload_complete', '1');
-          window.location.replace(window.location.pathname);
-          return;
-        }
-
-        window.sessionStorage.removeItem('oauth_reload_complete');
       }
 
-      // Initialize auth state on app load (fetch user if token exists)
-      await initialize();
-      if (!cancelled) {
-        setIsProcessingOAuth(false);
+      if (authError) {
+        toast.error('Authentication failed. Please try again.');
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+
+      try {
+        // Always initialize auth state (fetch user if token exists)
+        await initialize();
+      } catch (err) {
+        console.error('Initialization error during OAuth:', err);
+      } finally {
+        if (!cancelled) {
+          setIsProcessingOAuth(false);
+        }
       }
     };
 
@@ -115,8 +141,8 @@ const App: React.FC = () => {
     );
   }
 
-  // Show full-page loader until auth state is initialized
-  if (!isInitialized && isAuthenticated) {
+  // Show full-page loader until auth state is initialized (only when there IS a token)
+  if (!isInitialized && localStorage.getItem('access_token')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <LoadingSpinner size="lg" text="Loading your account..." />
@@ -173,6 +199,7 @@ const App: React.FC = () => {
             <Route path="/invoices" element={<ProtectedRoute allowedRoles={['customer', 'provider']}><Invoices /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute allowedRoles={['customer', 'provider', 'admin']}><Settings /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute allowedRoles={['customer', 'provider', 'admin']}><Profile /></ProtectedRoute>} />
+            <Route path="/premium" element={<ProtectedRoute allowedRoles={['customer', 'provider', 'admin']}><PremiumPage /></ProtectedRoute>} />
 
             {/* Provider routes */}
             <Route element={<ProtectedRoute allowedRoles={['provider']}><ProviderApprovalGate /></ProtectedRoute>}>
@@ -181,6 +208,7 @@ const App: React.FC = () => {
               <Route path="/provider/appointments" element={<AppointmentRequests />} />
               <Route path="/provider/schedule" element={<ProviderSchedule />} />
               <Route path="/provider/profile" element={<ProviderProfile />} />
+              <Route path="/provider/integrations" element={<IntegrationsPage />} />
             </Route>
 
             {/* Admin routes */}
@@ -194,8 +222,8 @@ const App: React.FC = () => {
             <Route path="/admin/settings" element={<Navigate to="/settings" replace />} />
           </Route>
 
-          {/* Default redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Default fallback */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
     </ErrorBoundary>

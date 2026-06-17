@@ -212,6 +212,7 @@ async def list_pending_providers(
             documents=[OnboardingDocument(**doc) for doc in item.get("documents", [])],
             application=item.get("application"),
             summary=item.get("summary"),
+            review_status=item.get("review_status", "pending"),
         )
         for item in page_items
     ]

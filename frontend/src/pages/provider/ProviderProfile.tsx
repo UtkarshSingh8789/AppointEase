@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Save, Sparkles } from 'lucide-react';
@@ -37,11 +37,12 @@ export const ProviderProfile: React.FC = () => {
   const [bioGenerating, setBioGenerating] = useState(false);
   const [suggestedBio, setSuggestedBio] = useState('');
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<ProfileFormData>({
+  const { register, handleSubmit, reset, setValue, control, watch, formState: { errors } } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
   });
 
   const currentSpecialization = watch('specialization');
+  const watchedCategoryId = watch('category_id');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -66,6 +67,13 @@ export const ProviderProfile: React.FC = () => {
     };
     fetchProfile();
   }, [reset]);
+
+  // Re-apply category_id once categories load (they may load after profile)
+  useEffect(() => {
+    if (provider?.category_id && categories.length > 0 && !watchedCategoryId) {
+      setValue('category_id', provider.category_id);
+    }
+  }, [categories, provider, watchedCategoryId, setValue]);
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsSaving(true);
@@ -152,7 +160,20 @@ export const ProviderProfile: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <Input label="Specialization" placeholder="e.g., General Dentistry, Hair Styling" error={errors.specialization?.message} {...register('specialization')} />
 
-          <Select label="Service Category" options={categoryOptions} placeholder="Select a category" error={errors.category_id?.message} {...register('category_id')} />
+          <Controller
+            name="category_id"
+            control={control}
+            render={({ field }) => (
+              <Select
+                label="Service Category"
+                options={categoryOptions}
+                placeholder="Select a category"
+                error={errors.category_id?.message}
+                {...field}
+                value={field.value || ''}
+              />
+            )}
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Years of Experience" type="number" min={0} error={errors.experience_years?.message} {...register('experience_years')} />

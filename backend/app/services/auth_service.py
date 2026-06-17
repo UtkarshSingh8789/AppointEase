@@ -55,10 +55,17 @@ class AuthService:
         )
 
         self.db.add(user)
-        await self.db.flush()
-        await self.db.refresh(user)
+        try:
+            await self.db.commit()
+            await self.db.refresh(user)
+        except Exception as e:
+            await self.db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create user account"
+            )
 
-        # Send welcome email
+        # Send welcome email after successful commit
         from app.services.email_service import email_service
         try:
             await email_service.send_welcome_email(
