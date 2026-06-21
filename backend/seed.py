@@ -89,9 +89,9 @@ async def seed_database():
     await create_tables()
 
     async with async_session_maker() as db:
-        # Check if data already exists
-        result = await db.execute(select(User))
-        if result.scalars().first():
+        # Check if the full provider/customer demo already exists.
+        provider_result = await db.execute(select(ServiceProvider))
+        if provider_result.scalars().first():
             print("Database already seeded. Skipping.")
             print("\n--- Login Credentials ---")
             print_credentials()

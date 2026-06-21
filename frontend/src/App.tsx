@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 
 // Lazy-loaded pages for code splitting
 const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const CalcomHub = lazy(() => import('@/pages/CalcomHub').then(m => ({ default: m.CalcomHub })));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
@@ -156,6 +157,7 @@ const App: React.FC = () => {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/calcom" element={<CalcomHub />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/p/:id" element={<ProviderPublicProfile />} />
