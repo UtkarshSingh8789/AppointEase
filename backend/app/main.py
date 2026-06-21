@@ -23,9 +23,9 @@ from app.routers import (
     chat,
     coupons,
     favorites,
+    calcom,
     invoices,
     loyalty,
-    mcp_tools,
     notifications,
     payments,
     providers,
@@ -44,6 +44,12 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+try:
+    from app.routers import mcp_tools
+except ModuleNotFoundError as exc:  # pragma: no cover - optional local dependency
+    mcp_tools = None
+    logger.warning("MCP tools router disabled: %s", exc)
 
 # Create FastAPI app
 app = FastAPI(
@@ -83,7 +89,6 @@ app.include_router(favorites.router)
 app.include_router(admin.router)
 app.include_router(waitlist.router)
 app.include_router(loyalty.router)
-app.include_router(mcp_tools.router)
 app.include_router(invoices.router)
 app.include_router(chat.router)
 app.include_router(coupons.router)
@@ -94,6 +99,9 @@ app.include_router(payments.router)
 app.include_router(reminders.router)
 app.include_router(premium.router)
 app.include_router(integrations.router)
+app.include_router(calcom.router)
+if mcp_tools is not None:
+    app.include_router(mcp_tools.router)
 
 
 lifespan_started = False
@@ -106,25 +114,22 @@ async def _startup():
     from app.core.redis import get_redis
     await get_redis()
     logger.info("Database tables created/verified.")
-    await _run_ai_seed()
+    await _run_demo_seed()
 
 
-async def _run_ai_seed():
-    """Run AI seed once — skips automatically if data already exists."""
+async def _run_demo_seed():
+    """Run the full demo seed once — skips automatically if data already exists."""
     try:
         from app.core.database import async_session_maker
         from sqlalchemy import select, func
-        from app.models.appointment import Appointment
+        from app.models.provider import ServiceProvider
         async with async_session_maker() as db:
-            # Check if ai_summary is already seeded
-            r = await db.execute(
-                select(func.count(Appointment.id)).where(Appointment.ai_summary.isnot(None))
-            )
-            already_seeded = (r.scalar() or 0) >= 5
-        if already_seeded:
-            logger.info("AI seed already applied — skipping.")
+            r = await db.execute(select(func.count(ServiceProvider.id)))
+            provider_count = int(r.scalar() or 0)
+        if provider_count > 0:
+            logger.info("Demo seed already applied — skipping.")
             return
-        logger.info("Running AI seed data...")
+        logger.info("Running full demo seed data...")
         import importlib.util, os
         seed_path = os.path.join(os.path.dirname(__file__), "..", "seed.py")
         seed_path = os.path.abspath(seed_path)
@@ -133,8 +138,10 @@ async def _run_ai_seed():
             module = importlib.util.module_from_spec(spec)
             assert spec.loader is not None
             spec.loader.exec_module(module)
+            await module.seed_database()
+            await module.seed_more_data()
             await module.seed_ai_data()
-            logger.info("AI seed data applied successfully.")
+            logger.info("Full demo seed applied successfully.")
         else:
             logger.warning("seed.py not found — skipping AI seed.")
     except Exception as e:
