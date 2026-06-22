@@ -255,7 +255,7 @@ SMTP_PORT=587
 SMTP_USER=<your-email>
 SMTP_PASS=<app-password>
 ```
-Without config, emails are logged to console and the password-reset token is returned in the API response. For testing use [Mailtrap](https://mailtrap.io) (free, 100 emails/month).
+Without config, emails are logged to console. For testing use [Mailtrap](https://mailtrap.io) (free, 100 emails/month).
 
 ### Razorpay Payments
 ```bash
@@ -407,9 +407,9 @@ Run `backend/seed.py` to create demo users.
 ### Admin
 | Email | Password |
 |-------|----------|
-| admin@appointly.com | admin123456 |
+| admin@appointly.com | Admin@2024 |
 
-### Customers (password: `password123`)
+### Customers (password: `Demo@1234`)
 | Name | Email |
 |------|-------|
 | Priya Sharma | priya.sharma@email.com |
@@ -423,7 +423,7 @@ Run `backend/seed.py` to create demo users.
 | Deepika Joshi | deepika.joshi@email.com |
 | Sanjay Verma | sanjay.verma@email.com |
 
-### Providers (password: `password123`)
+### Providers (password: `Demo@1234`)
 | Name | Email | Profile |
 |------|-------|---------|
 | Dr. Arun Kapoor | dr.arun.kapoor@email.com | General Medicine, Mumbai, ₹2500/hr |
@@ -435,7 +435,7 @@ Run `backend/seed.py` to create demo users.
 | Adv. Sunita Desai | adv.sunita.desai@email.com | Property Law, Kolkata, ₹5000/hr |
 | Ritu Malhotra | ritu.malhotra@email.com | Interior Design, Ahmedabad, ₹3000/hr |
 
-Additional generated provider accounts follow pattern `<category>-<specialization>-<number>@providers.appointease.test`, all with password `password123`.
+Additional generated provider accounts follow pattern `<category>-<specialization>-<number>@providers.appointease.test`, all with password `Demo@1234`.
 
 ---
 

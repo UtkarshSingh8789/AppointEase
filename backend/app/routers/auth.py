@@ -113,12 +113,29 @@ async def forgot_password(
     """Request a password reset token. Returns success even if email doesn't exist (security)."""
     service = PasswordResetService(db)
     token = await service.create_reset_token(data.email)
-    # In production, send this token via email
-    response = {"message": "If the email exists, a reset link has been sent."}
+
+    # Send reset link via email (token is never exposed in the API response)
     if token:
-        # Include token in response for development/testing purposes
-        response["reset_token"] = token
-    return response
+        from app.services.email_service import email_service
+        from sqlalchemy import select
+        try:
+            # Look up the user's name for the email template
+            result = await db.execute(select(User).where(User.email == data.email))
+            user = result.scalar_one_or_none()
+            user_name = user.full_name if user else "User"
+
+            frontend_url = settings.FRONTEND_URL
+            reset_link = f"{frontend_url}/reset-password?token={token}"
+            await email_service.send_password_reset(
+                user_email=data.email,
+                user_name=user_name,
+                reset_link=reset_link,
+            )
+        except Exception:
+            pass  # Email failure should not reveal account existence
+
+    # Always return the same response to prevent email enumeration
+    return {"message": "If the email exists, a reset link has been sent."}
 
 
 @router.post(

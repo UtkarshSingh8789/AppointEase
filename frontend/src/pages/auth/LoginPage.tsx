@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, Calendar, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Calendar, Eye, EyeOff, CheckCircle, Shield, UserCheck, Briefcase } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/services/api';
@@ -20,6 +20,12 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
+const DEMO_ACCOUNTS: { role: string; email: string; password: string; icon: React.ReactNode; color: string }[] = [
+  { role: 'Customer', email: 'priya.sharma@email.com', password: 'Demo@1234', icon: <UserCheck className="w-3.5 h-3.5" />, color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900' },
+  { role: 'Provider', email: 'dr.arun.kapoor@email.com', password: 'Demo@1234', icon: <Briefcase className="w-3.5 h-3.5" />, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900' },
+  { role: 'Admin', email: 'admin@appointly.com', password: 'Admin@2024', icon: <Shield className="w-3.5 h-3.5" />, color: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900' },
+];
+
 export const LoginPage: React.FC = () => {
   const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
@@ -31,6 +37,7 @@ export const LoginPage: React.FC = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -59,6 +66,23 @@ export const LoginPage: React.FC = () => {
   const onSubmit = async (data: LoginFormData) => {
     try {
       const loggedInUser = await login(data);
+      const dashboardPaths: Record<UserRole, string> = {
+        customer: '/dashboard',
+        provider: '/provider/dashboard',
+        admin: '/admin/dashboard',
+      };
+      navigate(dashboardPaths[loggedInUser.role], { replace: true });
+    } catch {
+      setShakeForm(true);
+      setTimeout(() => setShakeForm(false), 600);
+    }
+  };
+
+  const handleDemoLogin = async (email: string, password: string) => {
+    setValue('email', email);
+    setValue('password', password);
+    try {
+      const loggedInUser = await login({ email, password });
       const dashboardPaths: Record<UserRole, string> = {
         customer: '/dashboard',
         provider: '/provider/dashboard',
@@ -290,6 +314,30 @@ export const LoginPage: React.FC = () => {
               Create one
             </Link>
           </p>
+
+          {/* Demo Credentials Quick Login */}
+          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center mb-3 uppercase tracking-widest font-semibold">
+              Quick Demo Login
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {DEMO_ACCOUNTS.map((demo) => (
+                <button
+                  key={demo.role}
+                  type="button"
+                  onClick={() => handleDemoLogin(demo.email, demo.password)}
+                  disabled={isLoading}
+                  className={cn(
+                    'flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg border text-xs font-medium transition-all disabled:opacity-50',
+                    demo.color
+                  )}
+                >
+                  {demo.icon}
+                  {demo.role}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

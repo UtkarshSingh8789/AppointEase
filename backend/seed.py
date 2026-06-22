@@ -89,9 +89,9 @@ async def seed_database():
     await create_tables()
 
     async with async_session_maker() as db:
-        # Check if data already exists
-        result = await db.execute(select(User))
-        if result.scalars().first():
+        # Check if the full provider/customer demo already exists.
+        provider_result = await db.execute(select(ServiceProvider))
+        if provider_result.scalars().first():
             print("Database already seeded. Skipping.")
             print("\n--- Login Credentials ---")
             print_credentials()
@@ -188,7 +188,7 @@ async def seed_database():
         admin_user = User(
             id=uuid.uuid4(),
             email="admin@appointly.com",
-            password_hash=hash_password("admin123456"),
+            password_hash=hash_password("Admin@2024"),
             full_name="Rajesh Kumar (Admin)",
             phone_number="+919876543210",
             role=UserRole.ADMIN,
@@ -206,7 +206,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="priya.sharma@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Priya Sharma",
                 phone_number="+919876500001",
                 role=UserRole.CUSTOMER,
@@ -216,7 +216,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="amit.patel@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Amit Patel",
                 phone_number="+919876500002",
                 role=UserRole.CUSTOMER,
@@ -225,7 +225,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="sneha.reddy@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Sneha Reddy",
                 phone_number="+919876500003",
                 role=UserRole.CUSTOMER,
@@ -235,7 +235,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="vikram.singh@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Vikram Singh",
                 phone_number="+919876500004",
                 role=UserRole.CUSTOMER,
@@ -244,7 +244,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="ananya.iyer@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Ananya Iyer",
                 phone_number="+919876500005",
                 role=UserRole.CUSTOMER,
@@ -253,7 +253,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="rohan.gupta@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Rohan Gupta",
                 phone_number="+919876500006",
                 role=UserRole.CUSTOMER,
@@ -262,7 +262,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="kavita.nair@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Kavita Nair",
                 phone_number="+919876500007",
                 role=UserRole.CUSTOMER,
@@ -272,7 +272,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="arjun.mehta@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Arjun Mehta",
                 phone_number="+919876500008",
                 role=UserRole.CUSTOMER,
@@ -281,7 +281,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="deepika.joshi@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Deepika Joshi",
                 phone_number="+919876500009",
                 role=UserRole.CUSTOMER,
@@ -290,7 +290,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="sanjay.verma@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Sanjay Verma",
                 phone_number="+919876500010",
                 role=UserRole.CUSTOMER,
@@ -310,7 +310,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="dr.arun.kapoor@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Dr. Arun Kapoor",
                 phone_number="+919876600001",
                 role=UserRole.PROVIDER,
@@ -320,7 +320,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="dr.meera.shah@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Dr. Meera Shah",
                 phone_number="+919876600002",
                 role=UserRole.PROVIDER,
@@ -329,7 +329,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="neha.beauty@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Neha Kapoor",
                 phone_number="+919876600003",
                 role=UserRole.PROVIDER,
@@ -339,7 +339,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="swami.raghav@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Swami Raghav",
                 phone_number="+919876600004",
                 role=UserRole.PROVIDER,
@@ -348,7 +348,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="prof.suresh.iyer@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Prof. Suresh Iyer",
                 phone_number="+919876600005",
                 role=UserRole.PROVIDER,
@@ -357,7 +357,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="manish.tiwari@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Manish Tiwari",
                 phone_number="+919876600006",
                 role=UserRole.PROVIDER,
@@ -366,7 +366,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="adv.sunita.desai@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Adv. Sunita Desai",
                 phone_number="+919876600007",
                 role=UserRole.PROVIDER,
@@ -375,7 +375,7 @@ async def seed_database():
             User(
                 id=uuid.uuid4(),
                 email="ritu.malhotra@email.com",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name="Ritu Malhotra",
                 phone_number="+919876600008",
                 role=UserRole.PROVIDER,
@@ -422,7 +422,7 @@ async def seed_database():
                 provider_user = User(
                     id=uuid.uuid4(),
                     email=f"{email_slug}@providers.appointease.test",
-                    password_hash=hash_password("password123"),
+                    password_hash=hash_password("Demo@1234"),
                     full_name=full_name,
                     phone_number=f"+919877{cat_index:02d}{spec_index:02d}00",
                     role=UserRole.PROVIDER,
@@ -2077,8 +2077,8 @@ def print_credentials():
     print("🔑 LOGIN CREDENTIALS")
     print("=" * 60)
     print("\n--- Admin ---")
-    print("  admin@appointly.com / admin123456")
-    print("\n--- Customers (password: password123) ---")
+    print("  admin@appointly.com / Admin@2024")
+    print("\n--- Customers (password: Demo@1234) ---")
     print("  priya.sharma@email.com      - Priya Sharma")
     print("  amit.patel@email.com        - Amit Patel")
     print("  sneha.reddy@email.com       - Sneha Reddy")
@@ -2089,7 +2089,7 @@ def print_credentials():
     print("  arjun.mehta@email.com       - Arjun Mehta")
     print("  deepika.joshi@email.com     - Deepika Joshi")
     print("  sanjay.verma@email.com      - Sanjay Verma")
-    print("\n--- Providers (password: password123) ---")
+    print("\n--- Providers (password: Demo@1234) ---")
     print("  dr.arun.kapoor@email.com    - Dr. Arun Kapoor (General Medicine, Mumbai, ₹2500/hr)")
     print("  dr.meera.shah@email.com     - Dr. Meera Shah (Dermatology, Delhi, ₹3500/hr)")
     print("  neha.beauty@email.com       - Neha Kapoor (Hair Styling, Bangalore, ₹1500/hr)")
@@ -2228,7 +2228,7 @@ async def seed_more_data():
             customer = User(
                 id=uuid.uuid4(),
                 email=f"{email_slug}.{i}@customers.appointease.test",
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name=name,
                 phone_number=f"+91987800{i:04d}",
                 role=UserRole.CUSTOMER,
@@ -2561,7 +2561,7 @@ async def seed_more_data():
             user = User(
                 id=uuid.uuid4(),
                 email=seed_spec["email"],
-                password_hash=hash_password("password123"),
+                password_hash=hash_password("Demo@1234"),
                 full_name=seed_spec["full_name"],
                 phone_number=seed_spec["phone_number"],
                 role=UserRole.PROVIDER,
@@ -2657,7 +2657,7 @@ async def seed_ai_data():
                 fu = User(
                     id=uuid.uuid4(),
                     email=f"fraud.test{i+1}@appointease.test",
-                    password_hash=hash_password("password123"),
+                    password_hash=hash_password("Demo@1234"),
                     full_name=f"Suspicious User {i+1}",
                     phone_number=f"+9199990000{i:02d}",
                     role=UserRole.CUSTOMER,
@@ -2699,7 +2699,7 @@ async def seed_ai_data():
                 cu = User(
                     id=uuid.uuid4(),
                     email=f"churn.risk{i+1}@appointease.test",
-                    password_hash=hash_password("password123"),
+                    password_hash=hash_password("Demo@1234"),
                     full_name=f"Inactive Customer {i+1}",
                     phone_number=f"+9188880000{i:02d}",
                     role=UserRole.CUSTOMER,
