@@ -1,0 +1,113 @@
+{
+  "983d6bf3-6fd5-4184-b391-860308e704f8": {
+    "provider_id": "983d6bf3-6fd5-4184-b391-860308e704f8",
+    "user_id": "ace6d66c-2263-42e1-9608-2378f36f83c4",
+    "avatar": {
+      "name": "avatar.svg",
+      "path": "/uploads/provider-applications/983d6bf3-6fd5-4184-b391-860308e704f8/avatar.svg",
+      "content_type": "image/svg+xml",
+      "size": 729,
+      "preview": null
+    },
+    "documents": [
+      {
+        "name": "physio-license.txt",
+        "path": "/uploads/provider-applications/983d6bf3-6fd5-4184-b391-860308e704f8/document-1-physio-license.txt",
+        "content_type": "text/plain",
+        "size": 90,
+        "preview": "Maharashtra Physiotherapy Council registration. License No: MPC-74219. Valid through 2028."
+      },
+      {
+        "name": "experience-letter.txt",
+        "path": "/uploads/provider-applications/983d6bf3-6fd5-4184-b391-860308e704f8/document-2-experience-letter.txt",
+        "content_type": "text/plain",
+        "size": 97,
+        "preview": "Experience letter from City Rehab Clinic confirming 7 years of full-time rehabilitation practice."
+      }
+    ],
+    "payload": {
+      "specialization": "Physiotherapy & Rehabilitation",
+      "category_id": "2fc93f30-4049-445a-a625-d59d76a8c643",
+      "experience_years": 7,
+      "location": "Pune",
+      "area": "Baner",
+      "pincode": "411045",
+      "profile_description": "Certified physiotherapist focused on mobility recovery, posture correction, and post-surgery rehabilitation.",
+      "hourly_rate": 1200.0
+    }
+  },
+  "34033a20-8e43-49c2-8803-f842fe022d0f": {
+    "provider_id": "34033a20-8e43-49c2-8803-f842fe022d0f",
+    "user_id": "d6997570-6177-4df9-a214-6cd632372726",
+    "avatar": {
+      "name": "avatar.svg",
+      "path": "/uploads/provider-applications/34033a20-8e43-49c2-8803-f842fe022d0f/avatar.svg",
+      "content_type": "image/svg+xml",
+      "size": 729,
+      "preview": null
+    },
+    "documents": [
+      {
+        "name": "bar-certificate.txt",
+        "path": "/uploads/provider-applications/34033a20-8e43-49c2-8803-f842fe022d0f/document-1-bar-certificate.txt",
+        "content_type": "text/plain",
+        "size": 86,
+        "preview": "Delhi Bar Council registration. Enrollment No: DBC-118203. Family mediation certified."
+      },
+      {
+        "name": "case-portfolio.txt",
+        "path": "/uploads/provider-applications/34033a20-8e43-49c2-8803-f842fe022d0f/document-2-case-portfolio.txt",
+        "content_type": "text/plain",
+        "size": 90,
+        "preview": "Selected matters: custody mediation, divorce settlements, and property partition advisory."
+      }
+    ],
+    "payload": {
+      "specialization": "Family Law & Mediation",
+      "category_id": "d31388b2-0aa8-4e0f-85ef-5448465d0f4d",
+      "experience_years": 11,
+      "location": "Delhi",
+      "area": "Dwarka",
+      "pincode": "110075",
+      "profile_description": "Mediator and family law consultant handling custody, divorce, maintenance, and pre-marital agreements.",
+      "hourly_rate": 4200.0
+    }
+  },
+  "88c36404-907a-421e-a87b-51bcebf51dc9": {
+    "provider_id": "88c36404-907a-421e-a87b-51bcebf51dc9",
+    "user_id": "26b8d80b-bb02-4528-88cc-e4a3a37e15ee",
+    "avatar": {
+      "name": "avatar.svg",
+      "path": "/uploads/provider-applications/88c36404-907a-421e-a87b-51bcebf51dc9/avatar.svg",
+      "content_type": "image/svg+xml",
+      "size": 729,
+      "preview": null
+    },
+    "documents": [
+      {
+        "name": "yoga-certification.txt",
+        "path": "/uploads/provider-applications/88c36404-907a-421e-a87b-51bcebf51dc9/document-1-yoga-certification.txt",
+        "content_type": "text/plain",
+        "size": 89,
+        "preview": "Yoga Alliance certification, prenatal specialization, and birth-prep workshop completion."
+      },
+      {
+        "name": "identity-proof.txt",
+        "path": "/uploads/provider-applications/88c36404-907a-421e-a87b-51bcebf51dc9/document-2-identity-proof.txt",
+        "content_type": "text/plain",
+        "size": 73,
+        "preview": "Government-issued identity verification and address proof for onboarding."
+      }
+    ],
+    "payload": {
+      "specialization": "Prenatal Yoga & Recovery",
+      "category_id": "3cc8a69c-a58e-4e70-8ec6-983bd5dc2d59",
+      "experience_years": 6,
+      "location": "Bengaluru",
+      "area": "Indiranagar",
+      "pincode": "560038",
+      "profile_description": "Specialises in prenatal yoga, postnatal recovery, and gentle mobility-focused routines for new mothers.",
+      "hourly_rate": 1800.0
+    }
+  }
+}

@@ -21,6 +21,7 @@ import {
   BarChart3,
   ShieldCheck,
   Link as LinkIcon,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { Logo } from '@/components/ui/Logo';
@@ -42,6 +43,7 @@ const customerSections: NavSection[] = [
     heading: 'Overview',
     items: [
       { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+      { label: 'Cal.com Hub', path: '/calcom', icon: <Sparkles className="w-5 h-5" /> },
     ],
   },
   {
@@ -74,6 +76,7 @@ const providerSections: NavSection[] = [
     heading: 'Overview',
     items: [
       { label: 'Dashboard', path: '/provider/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+      { label: 'Cal.com Hub', path: '/calcom', icon: <Sparkles className="w-5 h-5" /> },
     ],
   },
   {
@@ -105,6 +108,7 @@ const adminSections: NavSection[] = [
     heading: 'Overview',
     items: [
       { label: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+      { label: 'Cal.com Hub', path: '/calcom', icon: <Sparkles className="w-5 h-5" /> },
     ],
   },
   {

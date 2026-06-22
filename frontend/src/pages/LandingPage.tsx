@@ -850,6 +850,13 @@ export const LandingPage: React.FC = () => {
                   Create free account
                   <ArrowRight className="w-5 h-5" aria-hidden="true" />
                 </Link>
+                <Link
+                  to="/calcom"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold border border-white/30 text-white hover:bg-white/10 transition-colors duration-200"
+                >
+                  Explore Cal.com Hub
+                  <ArrowUpRight className="w-5 h-5" aria-hidden="true" />
+                </Link>
               </div>
             </Reveal>
           </div>
